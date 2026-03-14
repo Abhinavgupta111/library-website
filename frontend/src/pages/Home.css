@@ -1,0 +1,327 @@
+.home-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    animation: fadeSlideUp 0.5s ease-out;
+}
+
+@keyframes fadeSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ------- Hero Banner ------- */
+.hero-banner {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+    border-radius: 16px;
+    padding: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+}
+
+.hero-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.hero-content p {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--primary);
+}
+
+.btn-secondary:hover {
+    background-color: #f1f5f9;
+}
+
+.btn-outline-white {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.btn-outline-white:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
+/* ------- KPI Cards ------- */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.kpi-card {
+    background-color: var(--secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.kpi-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* ------- Content Grid ------- */
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* ------- Book Library Grid ------- */
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.book-card {
+    background: var(--secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.book-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.book-cover {
+    height: 140px;
+    background-color: #e2e8f0;
+    /* Normally would be an image*/
+}
+
+.placeholder-cover-1 {
+    background: linear-gradient(45deg, #10b981, #3b82f6);
+}
+
+.placeholder-cover-2 {
+    background: linear-gradient(45deg, #f59e0b, #ec4899);
+}
+
+.placeholder-cover-3 {
+    background: linear-gradient(45deg, #8b5cf6, #3b82f6);
+}
+
+.placeholder-cover-4 {
+    background: linear-gradient(45deg, #ef4444, #f59e0b);
+}
+
+.book-info {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.book-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.book-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ------- Right Panel Dashboard Widget ------- */
+.dashboard-panel {
+    background-color: var(--secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.panel-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.list-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.list-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.list-item:hover {
+    background-color: var(--bg-color);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item.align-center {
+    align-items: center;
+}
+
+.date-badge {
+    background-color: var(--primary-light);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.date-badge .month {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+}
+
+.date-badge .day {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--primary-hover);
+    line-height: 1;
+}
+
+.item-details h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-main);
+}
+
+.item-details p {
+    font-size: 0.75rem;
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.notification-badge {
+    margin-left: auto;
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
