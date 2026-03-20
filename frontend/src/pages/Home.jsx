@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
 const Home = () => {
     const navigate = useNavigate();
-    const userInfo = JSON.parse(localStorage.getItem('userInfo')) || { name: 'Sarah Jenkins' };
+    const { userInfo } = useAuth();
+    const [borrowedCount, setBorrowedCount] = useState(0);
+
+    useEffect(() => {
+        if (userInfo?.token) {
+            axios.get('http://localhost:5000/api/books/my-borrowed', {
+                headers: { Authorization: `Bearer ${userInfo.token}` }
+            }).then(res => setBorrowedCount(res.data.length)).catch(() => {});
+        }
+    }, [userInfo]);
 
     return (
         <div className="home-dashboard">
             {/* Hero Section */}
             <div className="hero-banner">
                 <div className="hero-content">
-                    <h1>Welcome back, {userInfo.name} 👋</h1>
+                    <h1>Welcome back, {userInfo?.name || 'Student'} 👋</h1>
                     <p>You have <strong>3 books</strong> due this week. Stay on top of your reading!</p>
                 </div>
                 <div className="hero-actions">
@@ -29,7 +40,7 @@ const Home = () => {
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">4</span>
+                        <span className="kpi-value">{borrowedCount}</span>
                         <span className="kpi-label">Books Borrowed</span>
                     </div>
                 </div>
@@ -132,22 +143,22 @@ const Home = () => {
                         <div className="panel-body list-wrapper">
                             <div className="list-item" onClick={() => navigate('/events')}>
                                 <div className="date-badge">
-                                    <span className="month">Mon</span>
-                                    <span className="day">12</span>
+                                    <span className="month">Mar</span>
+                                    <span className="day">24</span>
                                 </div>
                                 <div className="item-details">
-                                    <h4>Tech Talk: AI Futures</h4>
-                                    <p>Main Auditorium • 2:00 PM</p>
+                                    <h4>India Convergence Expo</h4>
+                                    <p>Bharat Mandapam, New Delhi</p>
                                 </div>
                             </div>
                             <div className="list-item" onClick={() => navigate('/events')}>
                                 <div className="date-badge">
-                                    <span className="month">Wed</span>
-                                    <span className="day">14</span>
+                                    <span className="month">Mar</span>
+                                    <span className="day">25</span>
                                 </div>
                                 <div className="item-details">
-                                    <h4>Study Group: CompSci</h4>
-                                    <p>Library Room 3B • 4:00 PM</p>
+                                    <h4>Poster Submission Deadline</h4>
+                                    <p>Online – IT Department</p>
                                 </div>
                             </div>
                         </div>

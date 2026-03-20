@@ -9,6 +9,7 @@ const ENDPOINT = 'http://localhost:5000';
 const Admin = () => {
     const { userInfo } = useAuth();
     const [activeTab, setActiveTab] = useState('books');
+    const [reportedMessages, setReportedMessages] = useState([]);
 
     // States for forms
     const [bookTitle, setBookTitle] = useState('');
@@ -18,6 +19,21 @@ const Admin = () => {
 
     const [groupName, setGroupName] = useState('');
     const [groupType, setGroupType] = useState('Official');
+
+    useEffect(() => {
+        if (activeTab === 'reports' && userInfo?.role === 'Admin') {
+            const fetchReports = async () => {
+                try {
+                    const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
+                    const { data } = await axios.get(`${ENDPOINT}/api/chat/messages/reported`, config);
+                    setReportedMessages(data);
+                } catch (err) {
+                    console.error('Error fetching reported messages', err);
+                }
+            };
+            fetchReports();
+        }
+    }, [activeTab, userInfo]);
 
     // Verify Admin Role
     if (!userInfo || (userInfo.role !== 'Admin' && userInfo.role !== 'Librarian')) {
@@ -81,6 +97,14 @@ const Admin = () => {
                         Manage Groups
                     </button>
                 )}
+                {userInfo.role === 'Admin' && (
+                    <button
+                        className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('reports')}
+                    >
+                        Reported Messages
+                    </button>
+                )}
             </div>
 
             <div className="admin-content">
@@ -107,6 +131,29 @@ const Admin = () => {
                             </select>
                             <button type="submit" className="btn btn-primary mt-2">Create Group</button>
                         </form>
+                    </Card>
+                )}
+
+                {activeTab === 'reports' && userInfo.role === 'Admin' && (
+                    <Card title="Reported Messages" className="admin-card">
+                        {reportedMessages.length === 0 ? <p className="text-gray-400">No reported messages at this time.</p> : (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                                {reportedMessages.map(msg => (
+                                    <div key={msg._id} style={{padding: '1rem', background: '#1f2937', borderRadius: '8px', borderLeft: '4px solid #ef4444'}}>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                                            <strong style={{color: '#f8fafc'}}>{msg.sender_id?.name || 'Unknown User'}</strong>
+                                            <span style={{color: '#9ca3af', fontSize: '0.85rem'}}>{msg.group_id?.group_name || 'Unknown Group'}</span>
+                                        </div>
+                                        <p style={{margin: 0, fontStyle: 'italic', color: '#e5e7eb'}}>{msg.message}</p>
+                                        {msg.fileUrl && (
+                                            <a href={`${ENDPOINT}${msg.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{color: '#60a5fa', textDecoration: 'none', display: 'inline-block', marginTop: '0.5rem', fontSize: '0.85rem'}}>
+                                                📎 Attached File
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </Card>
                 )}
             </div>

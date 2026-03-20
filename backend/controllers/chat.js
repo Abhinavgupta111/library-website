@@ -73,3 +73,35 @@ export const getGroupMessages = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Report a message
+// @route   PUT /api/chat/messages/:id/report
+// @access  Private
+export const reportMessage = async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+    message.isReported = true;
+    await message.save();
+    res.json({ message: 'Message reported successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all reported messages
+// @route   GET /api/chat/messages/reported
+// @access  Private (Admin)
+export const getReportedMessages = async (req, res) => {
+  try {
+    const messages = await Message.find({ isReported: true })
+      .populate('sender_id', 'name')
+      .populate('group_id', 'group_name')
+      .sort({ updatedAt: -1 });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

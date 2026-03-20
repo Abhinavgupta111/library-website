@@ -3,13 +3,13 @@ import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
 import './DashboardLayout.css';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = ({ children, noPadding = false }) => {
     return (
         <div className="dashboard-layout">
             <Sidebar />
             <div className="dashboard-main-wrapper">
                 <TopHeader />
-                <main className="dashboard-content">
+                <main className={`dashboard-content ${noPadding ? 'no-padding' : ''}`}>
                     {children}
                 </main>
             </div>

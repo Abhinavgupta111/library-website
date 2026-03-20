@@ -16,16 +16,10 @@ const seedGroups = async () => {
     const adminId = adminUser ? adminUser._id : null;
 
     const branches = [
-      { name: "B.Sc. (Hons) Computer Science", desc: "Official discussion group for the Computer Science department." },
-      { name: "B.Sc. (Hons) Electronics", desc: "Official discussion group for the Electronics department." },
-      { name: "B.Sc. (Mathematical Science)", desc: "Official discussion group for Mathematical Science students." },
-      { name: "B.A. (Hons) Business Economics", desc: "Official discussion group for Business Economics (BBE)." },
-      { name: "B.A. (Hons) Journalism", desc: "Official discussion group for Journalism students." },
-      { name: "B.A. (Hons) English", desc: "Official discussion group for English literature students." },
-      { name: "B.A. (Hons) Hindi", desc: "Official discussion group for Hindi literature students." },
-      { name: "B.A. (Hons) Political Science", desc: "Official discussion group for Political Science." },
-      { name: "B.Com (Hons)", desc: "Official discussion group for Commerce students." },
-      { name: "B.A. Programme", desc: "Official discussion group for B.A. Programme students." },
+      { name: "B.Tech. Computer Science", desc: "Official discussion group for the Computer Science department." },
+      { name: "B.Tech. Electronics", desc: "Official discussion group for the Electronics department." },
+      { name: "B.Tech. Mathematical Science", desc: "Official discussion group for Mathematical Science students." },
+      { name: "B.Tech. Information Technology", desc: "Official discussion group for IT students." },
       { name: "General Campus Area", desc: "A common space for all students of Maharaja Agrasen College." }
     ];
 

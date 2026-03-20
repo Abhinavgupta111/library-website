@@ -23,8 +23,10 @@ const AppRoutes = () => {
         );
     }
 
+    const isChatPage = location.pathname === '/chat';
+
     return (
-        <DashboardLayout>
+        <DashboardLayout noPadding={isChatPage}>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/books" element={<Library />} />

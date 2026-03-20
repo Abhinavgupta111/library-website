@@ -10,6 +10,8 @@ import bookRoutes from './routes/books.js';
 import eventRoutes from './routes/events.js';
 import chatRoutes from './routes/chat.js';
 import Message from './models/Message.js';
+import multer from 'multer';
+import path from 'path';
 
 dotenv.config();
 
@@ -32,6 +34,26 @@ app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/chat', chatRoutes);
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename(req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ storage });
+
+app.post('/api/chat/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
+  res.send({ url: `/uploads/${req.file.filename}` });
+});
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'API is running...' });

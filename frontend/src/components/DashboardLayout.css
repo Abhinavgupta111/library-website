@@ -19,3 +19,7 @@
     width: 100%;
     margin: 0 auto;
 }
+
+.dashboard-content.no-padding {
+    padding: 0;
+}

@@ -1,4 +1,5 @@
 import Event from '../models/Event.js';
+import Group from '../models/Group.js';
 
 // @desc    Get all events
 // @route   GET /api/events
@@ -28,6 +29,17 @@ export const addEvent = async (req, res) => {
     });
 
     const createdEvent = await event.save();
+
+    // Automatically create a chat group for this event
+    const group = new Group({
+      group_name: `Event: ${title}`,
+      group_type: 'Event',
+      description: `Discussion group for the event: ${title}. ${description}`,
+      created_by: req.user._id,
+      members: [{ user: req.user._id, role: 'Admin' }]
+    });
+    await group.save();
+
     res.status(201).json(createdEvent);
   } catch (error) {
     res.status(500).json({ message: error.message });
