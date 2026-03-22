@@ -15,7 +15,7 @@ const Sidebar = () => {
         <aside className="sidebar">
             <div className="sidebar-brand">
                 <div className="brand-logo">📚</div>
-                <div className="brand-text">Smart Campus</div>
+                <div className="brand-text">Mait IT Library</div>
             </div>
 
             <div className="sidebar-nav">
