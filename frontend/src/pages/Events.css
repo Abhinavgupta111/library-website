@@ -7,9 +7,10 @@
 .events-header {
     margin-bottom: 2rem;
     color: var(--text-main);
-    font-size: 1.75rem;
-    font-weight: 800;
-    letter-spacing: -0.025em;
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-family: var(--font-heading);
 }
 
 .events-list {
@@ -19,7 +20,7 @@
 }
 
 .event-card {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .event-meta {
@@ -27,12 +28,12 @@
     flex-wrap: wrap;
     gap: 1.5rem;
     padding: 0.75rem 1rem;
-    background: rgba(79, 70, 229, 0.05);
-    border-radius: 8px;
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
     color: var(--primary);
     font-weight: 600;
-    font-size: 0.9rem;
-    border: 1px dashed rgba(79, 70, 229, 0.2);
+    font-size: 0.875rem;
+    border: 1px dashed color-mix(in srgb, var(--primary) 22%, transparent);
     margin-bottom: 1rem;
 }
 

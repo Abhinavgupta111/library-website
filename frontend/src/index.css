@@ -1,49 +1,104 @@
 :root {
-    /* SaaS-lite Colors */
-    --primary: #3b82f6;
-    /* Tailwind Blue-500 */
-    --primary-hover: #2563eb;
-    --primary-light: #eff6ff;
-    /* Tailwind Blue-50 */
+    /* Institutional palette + accent */
+    --primary: #1c3d5e;
+    --primary-hover: #152f4a;
+    --primary-light: #e8eef4;
+    --primary-muted: #3d5a78;
+
     --secondary: #ffffff;
-    --accent: #8b5cf6;
-    /* Purple for icons */
-    --success: #10b981;
-    /* Green */
-    --warning: #f59e0b;
-    /* Orange */
-    --danger: #ef4444;
-    /* Red */
+    --accent: #4a667a;
+    --accent-light: #eef2f5;
+    --gold: #b8952e;
+    --gold-muted: rgba(184, 149, 46, 0.35);
 
-    --bg-color: #f3f4f6;
-    /* Tailwind Gray-100 */
-    --text-main: #1f2937;
-    /* Tailwind Gray-800 */
-    --text-muted: #6b7280;
-    /* Tailwind Gray-500 */
-    --border-light: #e5e7eb;
-    /* Tailwind Gray-200 */
+    --success: #2d6a4f;
+    --success-light: #e7f2ec;
+    --warning: #b45309;
+    --warning-light: #fef6e7;
+    --danger: #b91c1c;
+    --danger-light: #fee2e2;
 
-    --sidebar-width: 260px;
-    --header-height: 70px;
+    --bg-color: #f0f2f5;
+    --text-main: #12161c;
+    --text-muted: #5c6570;
+    --border-light: #d8dde4;
 
-    /* Box Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.03);
+    --dropdown-bg: var(--secondary);
+    --panel-bg: rgba(255, 255, 255, 0.92);
+
+    /* Dark navy sidebar (light theme shell) */
+    --sidebar-bg: linear-gradient(180deg, #0f2840 0%, #0c2136 50%, #0a1c2e 100%);
+    --sidebar-surface: rgba(255, 255, 255, 0.04);
+    --sidebar-text: #f1f5f9;
+    --sidebar-muted: #94a3b8;
+    --sidebar-hover: rgba(255, 255, 255, 0.07);
+    --sidebar-active: rgba(255, 255, 255, 0.11);
+    --sidebar-accent: var(--gold);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+
+    --sidebar-width: 272px;
+    --header-height: 64px;
+
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-heading: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+    --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.12);
+    --shadow-xl: 0 24px 56px rgba(15, 23, 42, 0.14);
+    --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.06);
+    --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.dark-mode {
-    --bg-color: #111827;
-    --text-main: #f9fafb;
-    --text-muted: #9ca3af;
-    --border-light: #374151;
-    --secondary: #1f2937;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-    --shadow-card: 0px 4px 20px rgba(0, 0, 0, 0.5);
+    --primary: #7eb8ea;
+    --primary-hover: #9cc8f0;
+    --primary-light: rgba(126, 184, 234, 0.12);
+    --primary-muted: #8eb4d4;
+
+    --secondary: #161b22;
+    --accent: #9aa8b8;
+    --accent-light: rgba(154, 168, 184, 0.1);
+    --gold: #d4b84a;
+    --gold-muted: rgba(212, 184, 74, 0.3);
+
+    --success: #5ecf8e;
+    --success-light: rgba(94, 207, 142, 0.12);
+    --warning: #e8b84d;
+    --warning-light: rgba(232, 184, 77, 0.12);
+    --danger: #f08080;
+    --danger-light: rgba(240, 128, 128, 0.12);
+
+    --bg-color: #0d1117;
+    --text-main: #e8eaed;
+    --text-muted: #9aa3ad;
+    --border-light: #30363d;
+
+    --dropdown-bg: #1c2128;
+    --panel-bg: rgba(28, 33, 40, 0.96);
+
+    --sidebar-bg: linear-gradient(180deg, #06080c 0%, #0a0e14 100%);
+    --sidebar-surface: rgba(255, 255, 255, 0.03);
+    --sidebar-text: #f0f3f6;
+    --sidebar-muted: #8b949e;
+    --sidebar-hover: rgba(255, 255, 255, 0.06);
+    --sidebar-active: rgba(255, 255, 255, 0.09);
+    --sidebar-accent: var(--gold);
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.55);
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -52,19 +107,69 @@ body.dark-mode {
     padding: 0;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 body {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
     color: var(--text-main);
     background-color: var(--bg-color);
+    background-image:
+        radial-gradient(ellipse 120% 80% at 100% -10%, rgba(28, 61, 94, 0.07), transparent 52%),
+        radial-gradient(ellipse 90% 60% at -10% 110%, rgba(184, 149, 46, 0.05), transparent 50%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+body.dark-mode {
+    background-image:
+        radial-gradient(ellipse 100% 70% at 100% 0%, rgba(126, 184, 234, 0.06), transparent 50%),
+        radial-gradient(ellipse 80% 50% at 0% 100%, rgba(212, 184, 74, 0.04), transparent 45%);
+}
+
+body.nav-open {
+    overflow: hidden;
+}
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
 }
 
 #root {
     width: 100%;
     min-height: 100vh;
     display: flex;
+}
+
+/* Surfaces */
+.glass-panel {
+    background: var(--secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
 }
 
 /* Utilities */
@@ -89,15 +194,15 @@ body {
 }
 
 .bg-success-light {
-    background-color: rgba(16, 185, 129, 0.1);
+    background-color: var(--success-light);
 }
 
 .bg-warning-light {
-    background-color: rgba(245, 158, 11, 0.1);
+    background-color: var(--warning-light);
 }
 
 .bg-accent-light {
-    background-color: rgba(139, 92, 246, 0.1);
+    background-color: var(--accent-light);
 }
 
 .pill {
@@ -109,21 +214,29 @@ body {
 }
 
 .pill-success {
-    background-color: rgba(16, 185, 129, 0.15);
-    color: #047857;
+    background-color: var(--success-light);
+    color: var(--success);
 }
 
 .pill-warning {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: #b45309;
+    background-color: var(--warning-light);
+    color: var(--warning);
 }
 
-/* Button Reset */
 button {
     cursor: pointer;
     font-family: inherit;
     border: none;
     background: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 .btn {
@@ -132,20 +245,26 @@ button {
     justify-content: center;
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    font-weight: 600;
     font-size: 0.875rem;
+    transition: background-color var(--transition-base), color var(--transition-base),
+        border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .btn-primary {
     background-color: var(--primary);
-    color: white;
+    color: #fff;
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
     box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 .btn-outline {
@@ -164,7 +283,6 @@ button {
     font-size: 0.8125rem;
 }
 
-/* Layout Classes */
 .flex {
     display: flex;
 }
@@ -196,4 +314,8 @@ button {
 a {
     text-decoration: none;
     color: inherit;
+}
+
+a:hover {
+    color: var(--primary);
 }
