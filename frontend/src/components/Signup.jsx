@@ -25,6 +25,13 @@ const Signup = () => {
             return;
         }
 
+        // Password complexity check
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setError('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.');
+            return;
+        }
+
         try {
             const config = { headers: { 'Content-Type': 'application/json' } };
             const { data } = await axios.post('http://localhost:5000/api/auth/register',
@@ -55,7 +62,12 @@ const Signup = () => {
                     </div>
                     <div className="form-group">
                         <label>Password</label>
-                        <input type="password" className="form-control glass-input" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        <input type="password" name="password" className="form-control glass-input" 
+                            placeholder="At least 8 chars, 1 upper, 1 lower, 1 digit, 1 special sym"
+                            value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        <small className="form-text text-muted" style={{fontSize: '0.75rem', marginTop: '0.25rem', display: 'block'}}>
+                            Required: 8+ chars, Uppercase, Lowercase, Number, and Special symbol (@$!%*?&).
+                        </small>
                     </div>
                     <div className="form-group">
                         <label>Branch</label>

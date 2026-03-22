@@ -4,18 +4,48 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
+const ENDPOINT = 'http://localhost:5000';
+
 const Home = () => {
     const navigate = useNavigate();
     const { userInfo } = useAuth();
     const [borrowedCount, setBorrowedCount] = useState(0);
+    const [totalBooks, setTotalBooks] = useState(0);
+    const [eventCount, setEventCount] = useState(0);
+    const [featuredBooks, setFeaturedBooks] = useState([]);
+    const [upcomingEvents, setUpcomingEvents] = useState([]);
 
     useEffect(() => {
+        const config = userInfo?.token
+            ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
+            : {};
+
+        // Fetch borrowed count
         if (userInfo?.token) {
-            axios.get('http://localhost:5000/api/books/my-borrowed', {
-                headers: { Authorization: `Bearer ${userInfo.token}` }
-            }).then(res => setBorrowedCount(res.data.length)).catch(() => {});
+            axios.get(`${ENDPOINT}/api/books/my-borrowed`, config)
+                .then(res => setBorrowedCount(res.data.length))
+                .catch(() => {});
         }
+
+        // Fetch events for KPI count + sidebar panel
+        axios.get(`${ENDPOINT}/api/events`)
+            .then(res => {
+                setEventCount(res.data.length);
+                setUpcomingEvents(res.data.slice(0, 2)); // Show only 2 in sidebar
+            })
+            .catch(() => {});
+
+        // Fetch all books — sort by newest first for Library Highlights
+        axios.get(`${ENDPOINT}/api/books`, config)
+            .then(res => {
+                const sorted = [...res.data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setTotalBooks(res.data.length);
+                setFeaturedBooks(sorted.slice(0, 4)); // Show 4 newest additions
+            })
+            .catch(() => {});
     }, [userInfo]);
+
+    const coverColors = ['placeholder-cover-1', 'placeholder-cover-2', 'placeholder-cover-3', 'placeholder-cover-4'];
 
     return (
         <div className="home-dashboard">
@@ -23,7 +53,7 @@ const Home = () => {
             <div className="hero-banner">
                 <div className="hero-content">
                     <h1>Welcome back, {userInfo?.name || 'Student'} 👋</h1>
-                    <p>You have <strong>3 books</strong> due this week. Stay on top of your reading!</p>
+                    <p>You have <strong>{borrowedCount} book{borrowedCount !== 1 ? 's' : ''}</strong> currently borrowed. Stay on top of your reading!</p>
                 </div>
                 <div className="hero-actions">
                     <button className="btn btn-secondary" onClick={() => navigate('/books')}>Browse Library</button>
@@ -51,7 +81,7 @@ const Home = () => {
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">12</span>
+                        <span className="kpi-value">0</span>
                         <span className="kpi-label">Unread Messages</span>
                     </div>
                 </div>
@@ -65,22 +95,20 @@ const Home = () => {
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">2</span>
+                        <span className="kpi-value">{eventCount}</span>
                         <span className="kpi-label">Upcoming Events</span>
                     </div>
                 </div>
-                <div className="kpi-card" onClick={() => navigate('/')}>
+                <div className="kpi-card" onClick={() => navigate('/books')}>
                     <div className="kpi-icon-wrapper bg-success-light text-success">
                         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-                            <line x1="12" y1="18" x2="12" y2="22"></line>
-                            <line x1="12" y1="2" x2="12" y2="6"></line>
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">$0.00</span>
-                        <span className="kpi-label">Library Fines</span>
+                        <span className="kpi-value">{totalBooks}</span>
+                        <span className="kpi-label">Available Books</span>
                     </div>
                 </div>
             </div>
@@ -90,46 +118,28 @@ const Home = () => {
                 {/* Left Column: Library Highlights */}
                 <div className="grid-main">
                     <div className="section-header">
-                        <h2>Library Highlights</h2>
+                        <h2>New Arrivals <span style={{fontSize:'0.8rem', fontWeight:400, color:'var(--text-muted)', marginLeft:'0.5rem'}}>Latest 4 additions</span></h2>
                         <button className="btn btn-sm btn-outline" onClick={() => navigate('/books')}>View All Books</button>
                     </div>
                     <div className="books-grid">
-                        {/* Dummy Book 1 */}
-                        <div className="book-card" onClick={() => navigate('/books')}>
-                            <div className="book-cover placeholder-cover-1"></div>
-                            <div className="book-info">
-                                <h4>The Design of Everyday ...</h4>
-                                <p>Don Norman</p>
-                                <span className="pill pill-success">Available</span>
+                        {featuredBooks.length > 0 ? (
+                            featuredBooks.map((book, idx) => (
+                                <div className="book-card" key={book._id} onClick={() => navigate('/books')}>
+                                    <div className={`book-cover ${coverColors[idx % coverColors.length]}`}></div>
+                                    <div className="book-info">
+                                        <h4>{book.title.length > 22 ? book.title.slice(0, 22) + '...' : book.title}</h4>
+                                        <p>{book.author}</p>
+                                        <span className={`pill ${book.available_copies > 0 ? 'pill-success' : 'pill-warning'}`}>
+                                            {book.available_copies > 0 ? 'Available' : 'Checked Out'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{ padding: '2rem', color: 'var(--text-muted)', textAlign: 'center', width: '100%' }}>
+                                <p>No books found. <button className="btn btn-sm btn-outline" onClick={() => navigate('/books')}>Browse Library</button></p>
                             </div>
-                        </div>
-                        {/* Dummy Book 2 */}
-                        <div className="book-card" onClick={() => navigate('/books')}>
-                            <div className="book-cover placeholder-cover-2"></div>
-                            <div className="book-info">
-                                <h4>Clean Code</h4>
-                                <p>Robert C. Martin</p>
-                                <span className="pill pill-warning">Waitlist (2)</span>
-                            </div>
-                        </div>
-                        {/* Dummy Book 3 */}
-                        <div className="book-card" onClick={() => navigate('/books')}>
-                            <div className="book-cover placeholder-cover-3"></div>
-                            <div className="book-info">
-                                <h4>Atomic Habits</h4>
-                                <p>James Clear</p>
-                                <span className="pill pill-success">Available</span>
-                            </div>
-                        </div>
-                        {/* Dummy Book 4 */}
-                        <div className="book-card" onClick={() => navigate('/books')}>
-                            <div className="book-cover placeholder-cover-4"></div>
-                            <div className="book-info">
-                                <h4>Database Internals</h4>
-                                <p>Alex Petrov</p>
-                                <span className="pill pill-warning">Waitlist (1)</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -141,26 +151,27 @@ const Home = () => {
                             <h3>Upcoming Events</h3>
                         </div>
                         <div className="panel-body list-wrapper">
-                            <div className="list-item" onClick={() => navigate('/events')}>
-                                <div className="date-badge">
-                                    <span className="month">Mar</span>
-                                    <span className="day">24</span>
+                            {upcomingEvents.length > 0 ? (
+                                upcomingEvents.map(event => {
+                                    const d = new Date(event.event_date);
+                                    return (
+                                        <div className="list-item" key={event._id} onClick={() => navigate('/events')}>
+                                            <div className="date-badge">
+                                                <span className="month">{d.toLocaleString('en', { month: 'short' })}</span>
+                                                <span className="day">{d.getDate()}</span>
+                                            </div>
+                                            <div className="item-details">
+                                                <h4>{event.title}</h4>
+                                                <p>{event.venue}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                    No upcoming events.
                                 </div>
-                                <div className="item-details">
-                                    <h4>India Convergence Expo</h4>
-                                    <p>Bharat Mandapam, New Delhi</p>
-                                </div>
-                            </div>
-                            <div className="list-item" onClick={() => navigate('/events')}>
-                                <div className="date-badge">
-                                    <span className="month">Mar</span>
-                                    <span className="day">25</span>
-                                </div>
-                                <div className="item-details">
-                                    <h4>Poster Submission Deadline</h4>
-                                    <p>Online – IT Department</p>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -170,20 +181,18 @@ const Home = () => {
                             <h3>Recent Chats</h3>
                         </div>
                         <div className="panel-body list-wrapper">
-                            <div className="list-item align-center" onClick={() => navigate('/chat')}>
-                                <div className="avatar-circle">MC</div>
-                                <div className="item-details">
-                                    <h4>Math Club</h4>
-                                    <p>Are we meeting tomorrow?</p>
-                                </div>
-                                <span className="notification-badge">2</span>
-                            </div>
-                            <div className="list-item align-center" onClick={() => navigate('/chat')}>
-                                <div className="avatar-circle">JP</div>
-                                <div className="item-details">
-                                    <h4>John Peterson</h4>
-                                    <p>Thanks for the notes!</p>
-                                </div>
+                            <div style={{ 
+                                textAlign: 'center', padding: '1.5rem 1rem', 
+                                color: 'var(--text-muted)', display: 'flex', 
+                                flexDirection: 'column', alignItems: 'center', gap: '0.5rem' 
+                            }}>
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <p style={{ margin: 0, fontSize: '0.85rem' }}>No recent chats yet.</p>
+                                <button className="btn btn-sm btn-outline" onClick={() => navigate('/chat')} style={{ marginTop: '0.25rem' }}>
+                                    Join a Group
+                                </button>
                             </div>
                         </div>
                     </div>

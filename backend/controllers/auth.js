@@ -19,6 +19,14 @@ export const registerUser = async (req, res) => {
         return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
+    // Password complexity check: 8+ chars, upper, lower, digit, special char
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({ 
+            message: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' 
+        });
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -94,6 +102,28 @@ export const getUserProfile = async (req, res) => {
     } else {
       res.status(404).json({ message: 'User not found' });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Search users by name or email
+// @route   GET /api/auth/users/search
+// @access  Private
+export const searchUsers = async (req, res) => {
+  try {
+    const keyword = req.query.search
+      ? {
+          $or: [
+            { name: { $regex: req.query.search, $options: 'i' } },
+            { email: { $regex: req.query.search, $options: 'i' } },
+          ],
+        }
+      : {};
+
+    // Do not return the current user
+    const users = await User.find({ ...keyword, _id: { $ne: req.user._id } }).select('name email role');
+    res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

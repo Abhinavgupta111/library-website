@@ -22,4 +22,6 @@
 
 .dashboard-content.no-padding {
     padding: 0;
+    max-width: none;
+    margin: 0;
 }

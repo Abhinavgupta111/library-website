@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const groupSchema = new mongoose.Schema({
   group_name: { type: String, required: true },
-  group_type: { type: String, enum: ['Official', 'Society', 'Event', 'Student'], default: 'Student' },
+  group_type: { type: String, enum: ['course', 'society', 'general', 'Official', 'Event', 'Student'], default: 'society' },
+  tags: [{ type: String }],
   description: { type: String },
   is_official: { type: Boolean, default: false },
   created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import './TopHeader.css';
 
 const TopHeader = () => {
@@ -38,11 +39,20 @@ const TopHeader = () => {
         zIndex: 200, minWidth: '220px', overflow: 'hidden',
     };
 
-    const notifications = [
-        { icon: '🏛️', text: 'India Convergence Expo – Mar 24, Bharat Mandapam, New Delhi. Only 40 seats!', time: 'Last date: 21 Mar' },
-        { icon: '📋', text: 'Poster Submission for Co-Curricular Achievements due 25th March.', time: 'Last date: 25 Mar' },
-        { icon: '💬', text: 'New message in B.Tech IT group', time: 'Just now' },
-    ];
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        axios.get('http://localhost:5000/api/events')
+            .then(res => {
+                const mapped = res.data.slice(0, 3).map(e => ({
+                    icon: '📅',
+                    text: `${e.title} — ${e.venue}`,
+                    time: `Date: ${new Date(e.event_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                }));
+                setNotifications(mapped);
+            })
+            .catch(() => setNotifications([]));
+    }, []);
 
     return (
         <header className="top-header">
@@ -110,7 +120,7 @@ const TopHeader = () => {
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                         </svg>
-                        <span className="notification-dot"></span>
+                        {notifications.length > 0 && <span className="notification-dot"></span>}
                     </button>
                     {showNotifications && (
                         <div style={{ ...dropdownStyle, minWidth: '280px' }}>
@@ -118,7 +128,7 @@ const TopHeader = () => {
                                 Notifications
                                 <span style={{ fontSize: '0.75rem', color: '#6366f1', cursor: 'pointer' }} onClick={() => setShowNotifications(false)}>Mark all read</span>
                             </div>
-                            {notifications.map((n, i) => (
+                            {notifications.length > 0 ? notifications.map((n, i) => (
                                 <div key={i} style={{ padding: '0.75rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -128,7 +138,11 @@ const TopHeader = () => {
                                         <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.2rem' }}>{n.time}</div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                                    No notifications yet.
+                                </div>
+                            )}
                             <div style={{ padding: '0.65rem 1rem', textAlign: 'center', color: '#6366f1', fontSize: '0.85rem', cursor: 'pointer' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

@@ -4,10 +4,19 @@ import bcrypt from 'bcrypt';
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { 
+    type: String, 
+    required: true,
+    minlength: 8,
+    validate: {
+      validator: (v) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v),
+      message: 'Password must include uppercase, lowercase, numbers, and special characters.'
+    }
+  },
   role: { type: String, enum: ['Student', 'Admin', 'Librarian'], default: 'Student' },
   branch: { type: String },
-  year: { type: Number }
+  year: { type: Number },
+  pinnedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }]
 }, {
   timestamps: true
 });
