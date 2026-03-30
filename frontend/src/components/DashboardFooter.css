@@ -1,0 +1,41 @@
+.dashboard-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border-light);
+    background: color-mix(in srgb, var(--secondary) 92%, var(--bg-color));
+    padding: 1.25rem clamp(1rem, 3vw, 2rem);
+}
+
+.dashboard-footer-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dashboard-footer-copy {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    max-width: 36rem;
+    line-height: 1.5;
+}
+
+.dashboard-footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.dashboard-footer-nav a {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+}
+
+.dashboard-footer-nav a:hover {
+    color: var(--primary);
+}

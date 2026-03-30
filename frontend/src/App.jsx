@@ -23,12 +23,22 @@ const AppRoutes = () => {
         );
     }
 
+    const isHomePage = location.pathname === '/';
+
+    if (isHomePage) {
+        return (
+            <Routes>
+                <Route path="/" element={<Home />} />
+            </Routes>
+        );
+    }
+
     const isChatPage = location.pathname === '/chat';
 
     return (
         <DashboardLayout noPadding={isChatPage}>
             <Routes>
-                <Route path="/" element={<Home />} />
+                {/* Home is rendered independently above */}
                 <Route path="/books" element={<Library />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/chat" element={<Chat />} />
