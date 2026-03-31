@@ -1,58 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
   return (
     <div className="home-container">
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="navbar-left">
-          <div className="navbar-logo">MAIT Library</div>
-          <div className="navbar-links">
-            <a href="#catalog" className="active">Catalog</a>
-            <a href="#journals">Journals</a>
-            <a href="#archives">Archives</a>
-            <a href="#contact">Contact Us</a>
-          </div>
-        </div>
-        <div className="navbar-right">
-          <button className="icon-btn notification-btn">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            <span className="dot"></span>
-          </button>
-          <button className="icon-btn profile-btn">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </button>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <div className="hero-section">
-        <div className="hero-content">
-          <h1>Access the Scholastic Archive</h1>
-
-          <div className="search-bar hero-search-bar">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" placeholder="Search books, journals, manuscripts, or DOI.." />
-          </div>
-
-          <div className="quick-filters">
-            <span>Quick Filters:</span>
-            <button className="filter-btn">Engineering</button>
-            <button className="filter-btn">Management</button>
-            <button className="filter-btn">Physics</button>
-          </div>
-        </div>
-      </div>
 
       {/* Messages Section */}
       <div className="messages-section">
@@ -142,7 +94,7 @@ const Home = () => {
         <div className="events-column">
           <div className="section-header">
             <h3>Ongoing Events</h3>
-            <button className="view-all">VIEW ALL</button>
+            <Link to="/events" className="view-all">VIEW ALL</Link>
           </div>
           <div className="events-list">
             <div className="event-card">
@@ -184,7 +136,10 @@ const Home = () => {
         <div className="collections-column">
           <div className="section-header">
             <h3>Departmental Collections</h3>
-            <span className="updated-text">Updated Monthly</span>
+            <div className="flex items-center gap-4">
+              <span className="updated-text">Updated Monthly</span>
+              <Link to="/library" className="view-all">VIEW ALL</Link>
+            </div>
           </div>
           <div className="collections-table-wrapper">
             <table className="collections-table">

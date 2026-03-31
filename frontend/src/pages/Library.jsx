@@ -148,7 +148,7 @@ const Library = () => {
         <>
           {/* ALL BOOKS TAB */}
           {tab === 'all' && (
-            <div className="books-grid">
+            <div className="books-grid px-10">
               {books.length > 0 ? books.map(book => (
                 <Card key={book._id} title={book.title} subtitle={`By ${book.author}`} className="book-card">
                   <div className="book-details">

@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
     /* Institutional palette + accent */
     --primary: #1c3d5e;
@@ -137,6 +139,7 @@ body {
         radial-gradient(ellipse 90% 60% at -10% 110%, rgba(184, 149, 46, 0.05), transparent 50%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
 }
 
 body.dark-mode {
@@ -160,8 +163,10 @@ h3 {
 
 #root {
     width: 100%;
+    max-width: 100%;
     min-height: 100vh;
     display: flex;
+    overflow-x: hidden;
 }
 
 /* Surfaces */
@@ -232,11 +237,16 @@ button {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+}
+
+input:focus,
+input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .btn {

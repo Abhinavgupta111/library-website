@@ -1,40 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
-import DashboardFooter from './DashboardFooter';
-import './DashboardLayout.css';
 
 const DashboardLayout = ({ children, noPadding = false }) => {
-    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    useEffect(() => {
-        document.body.classList.toggle('nav-open', mobileNavOpen);
-        return () => document.body.classList.remove('nav-open');
-    }, [mobileNavOpen]);
-
-    const closeMobileNav = () => setMobileNavOpen(false);
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
 
     return (
-        <div className="dashboard-layout">
-            <button
-                type="button"
-                className={`sidebar-backdrop${mobileNavOpen ? ' is-visible' : ''}`}
-                aria-label="Close navigation menu"
-                onClick={closeMobileNav}
-            />
-            <Sidebar
-                className={mobileNavOpen ? 'sidebar--open' : ''}
-                onNavigate={closeMobileNav}
-            />
-            <div className="dashboard-main-wrapper">
-                <TopHeader
-                    onMenuClick={() => setMobileNavOpen((v) => !v)}
-                    menuOpen={mobileNavOpen}
+        <div className="flex h-screen w-full overflow-hidden bg-gray-50 text-[var(--text-main)] font-sans">
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
                 />
-                <main id="top" className={`dashboard-content ${noPadding ? 'no-padding' : ''}`}>
+            )}
+
+            {/* Sidebar */}
+            <Sidebar isOpen={isSidebarOpen} onCloseMobile={() => setIsSidebarOpen(false)} />
+
+            {/* Main Content Area */}
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10 transition-all duration-300">
+                <TopHeader 
+                    onMenuClick={toggleSidebar} 
+                    isSidebarOpen={isSidebarOpen} 
+                />
+                
+                <main className={`flex-1 overflow-x-hidden overflow-y-auto no-scrollbar scroll-smooth ${noPadding ? '' : 'p-6 md:p-8'}`}>
                     {children}
                 </main>
-                {!noPadding && <DashboardFooter />}
             </div>
         </div>
     );

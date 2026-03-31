@@ -18,10 +18,9 @@ body {
 
 .home-container {
   width: 100%;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: transparent;
 }
 
 /* NAVBAR */
@@ -191,16 +190,16 @@ body {
 .messages-section {
   display: flex;
   gap: 1.5rem;
-  padding: 0 4rem 3rem 4rem;
+  padding: 1.5rem 0 3rem 0;
 }
 
 .message-card {
   flex: 1;
   background-color: #fff;
   border: 1px solid var(--home-border);
-  border-radius: 8px;
+  border-radius: 0.75rem; /* rounded-xl */
   padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
   display: flex;
   flex-direction: column;
 }
@@ -250,8 +249,8 @@ body {
 
 /* FEATURES SECTION */
 .features-section {
-  padding: 4rem;
-  background-color: #f8fafc;
+  padding: 3rem 2rem;
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -286,9 +285,11 @@ body {
 }
 
 .feature-card {
-  background-color: #f1f5f9;
+  background-color: #fff;
   padding: 1.5rem;
-  border-radius: 6px;
+  border-radius: 0.75rem; /* rounded-xl */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  border: 1px solid var(--home-border);
 }
 
 .feature-icon {
@@ -313,16 +314,18 @@ body {
 .content-split {
   display: flex;
   gap: 2.5rem;
-  padding: 4rem;
-  background-color: #fff;
+  padding: 3rem 0;
+  background-color: transparent;
 }
 
 .events-column {
-  flex: 0 0 35%;
+  flex: 1;
+  min-width: 0;
 }
 
 .collections-column {
-  flex: 0 0 65%;
+  flex: 1.8;
+  min-width: 0;
 }
 
 .section-header {
@@ -365,9 +368,10 @@ body {
   gap: 1.25rem;
   align-items: flex-start;
   padding: 1rem;
-  border-radius: 6px;
-  background-color: #f8fafc;
+  border-radius: 0.75rem; /* rounded-xl */
+  background-color: #fff;
   border: 1px solid var(--home-border);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
 }
 
 .event-date {
@@ -438,10 +442,12 @@ body {
 
 /* TABLE */
 .collections-table-wrapper {
-  background-color: #f8fafc;
-  border-radius: 6px;
+  background-color: #fff;
+  border-radius: 0.75rem; /* rounded-xl */
   border: 1px solid var(--home-border);
-  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .collections-table {
@@ -490,8 +496,8 @@ body {
 
 /* FOOTER */
 .footer {
-  background-color: #f1f5f9;
-  padding: 3rem 4rem 1.5rem 4rem;
+  background-color: transparent;
+  padding: 3rem 0 1.5rem 0;
 }
 
 .footer-columns {
