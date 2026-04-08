@@ -8,6 +8,7 @@ import Events from './pages/Events';
 import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
 const AppRoutes = () => {
@@ -41,9 +42,11 @@ const AppRoutes = () => {
 function App() {
     return (
         <AuthProvider>
-            <BrowserRouter>
-                <AppRoutes />
-            </BrowserRouter>
+            <ThemeProvider>
+                <BrowserRouter>
+                    <AppRoutes />
+                </BrowserRouter>
+            </ThemeProvider>
         </AuthProvider>
     );
 }

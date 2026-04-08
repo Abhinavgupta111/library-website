@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import Card from './Card';
 import './Auth.css';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -17,7 +17,7 @@ const Login = () => {
         setError('');
 
         if (!email || !password) {
-            setError('Please enter both email and password');
+            setError('Please enter both email and password.');
             return;
         }
 
@@ -27,43 +27,77 @@ const Login = () => {
             login(data);
             navigate('/');
         } catch (err) {
-            const errorMessage = err.response?.data?.message || err.message || 'Login failed - Server disconnected?';
-            console.error("Login Submission Error:", err);
-            setError(errorMessage);
+            setError(err.response?.data?.message || err.message || 'Login failed — is the server running?');
         }
     };
 
     return (
-        <div className="auth-container">
-            <Card title="Login to Campus" subtitle="Welcome back to the Smart Campus Library" className="auth-card">
-                {error && <div className="alert alert-danger">{error}</div>}
-                <form onSubmit={submitHandler} className="auth-form">
-                    <div className="form-group">
-                        <label>Email Address</label>
-                        <input
-                            type="email"
-                            className="form-control glass-input"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Password</label>
-                        <input
-                            type="password"
-                            className="form-control glass-input"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <button type="submit" className="btn btn-primary btn-block">Login</button>
-                </form>
-                <div className="auth-footer">
-                    New student? <Link to="/signup">Register here</Link>
+        <div className="auth-page">
+            <div className="auth-card">
+
+                {/* Brand */}
+                <div className="auth-brand">
+                    <div className="auth-brand-icon">📚</div>
+                    <span className="auth-brand-name">MAIT Library</span>
                 </div>
-            </Card>
+
+                {/* Heading */}
+                <div className="auth-heading">
+                    <h1>Welcome Back</h1>
+                    <p>Login to the IT Department Library</p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                    <div className="auth-alert auth-alert-danger">
+                        <span className="auth-alert-icon">⚠️</span>
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={submitHandler} className="auth-form" noValidate>
+
+                    <div className="auth-field">
+                        <label className="auth-label" htmlFor="lg-email">Email Address</label>
+                        <input
+                            id="lg-email"
+                            type="email"
+                            className="auth-input"
+                            placeholder="yourname@mait.ac.in"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                            autoComplete="email"
+                        />
+                    </div>
+
+                    <div className="auth-field">
+                        <label className="auth-label" htmlFor="lg-password">Password</label>
+                        <input
+                            id="lg-password"
+                            type="password"
+                            className="auth-input"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            autoComplete="current-password"
+                        />
+                    </div>
+
+                    <button type="submit" className="auth-submit-btn">
+                        Login →
+                    </button>
+                </form>
+
+                {/* Footer */}
+                <div className="auth-footer">
+                    New student?
+                    <Link to="/signup">Create an account</Link>
+                </div>
+
+            </div>
         </div>
     );
 };

@@ -16,7 +16,7 @@ const Navbar = () => {
             <div className="navbar-brand">
                 <Link to="/">
                     <span className="logo-icon">📚</span>
-                    <span className="logo-text">Smart Campus</span>
+                    <span className="logo-text">MAIT Library</span>
                 </Link>
             </div>
             <div className="navbar-links">
