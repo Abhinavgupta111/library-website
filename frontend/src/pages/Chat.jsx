@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
 import './Chat.css';
 
-/* ─────────────────────────────────────────────
-   HARDCODED DATA — no backend, no socket.io
-   ───────────────────────────────────────────── */
-const GROUPS = [
-    '2I123', '2I456', '2I789',
-    '4I123', '4I456', '4I789',
-    '6I123', '6I456', '6I789',
-];
+const ENDPOINT = 'http://localhost:5000';
 
 /* Avatar colour pool — deterministic by index */
 const AVATAR_GRADIENTS = [
@@ -23,102 +19,133 @@ const AVATAR_GRADIENTS = [
     'linear-gradient(135deg,#f87171,#dc2626)',
 ];
 
-/* Dummy messages per group */
-const DUMMY_MESSAGES = {
-    '2I123': [
-        { id: 1, sender: 'Aryan Mehta', text: 'Hey, did anyone check the Data Structures assignment?', sent: false, time: '9:14 AM' },
-        { id: 2, sender: 'You', text: 'Yeah, Q3 is a bit tricky. Linked list reversal in O(1) space.', sent: true, time: '9:15 AM' },
-        { id: 3, sender: 'Priya Sharma', text: 'It\'s doable! Just use three pointers 😊', sent: false, time: '9:16 AM' },
-        { id: 4, sender: 'You', text: 'Thanks! Will try that approach.', sent: true, time: '9:17 AM' },
-    ],
-    '2I456': [
-        { id: 1, sender: 'Rohan Singh', text: 'DBMS lab quiz tomorrow — anyone prepared?', sent: false, time: '10:02 AM' },
-        { id: 2, sender: 'You', text: 'Went through normalization. 1NF to BCNF.', sent: true, time: '10:04 AM' },
-        { id: 3, sender: 'Sneha Kapoor', text: 'Sharing my notes in the group! 📎', sent: false, time: '10:05 AM' },
-    ],
-    '2I789': [
-        { id: 1, sender: 'Amit Verma', text: 'OS assignment due Friday — let\'s pair up.', sent: false, time: '8:45 AM' },
-        { id: 2, sender: 'You', text: 'Sure! I\'ll do the memory management section.', sent: true, time: '8:48 AM' },
-        { id: 3, sender: 'Neha Jain', text: 'I\'ll cover process scheduling 🙌', sent: false, time: '8:50 AM' },
-        { id: 4, sender: 'You', text: 'Perfect. Let\'s sync tomorrow evening.', sent: true, time: '8:51 AM' },
-    ],
-    '4I123': [
-        { id: 1, sender: 'Karan Bhatia', text: 'Anyone attended today\'s CN lecture?', sent: false, time: '2:10 PM' },
-        { id: 2, sender: 'You', text: 'Yes! It was on TCP/IP socket programming.', sent: true, time: '2:12 PM' },
-        { id: 3, sender: 'Karan Bhatia', text: 'Could you share your notes please? 🙏', sent: false, time: '2:13 PM' },
-    ],
-    '4I456': [
-        { id: 1, sender: 'Divya Rao', text: 'ML project team — who\'s doing the model training?', sent: false, time: '11:30 AM' },
-        { id: 2, sender: 'You', text: 'I can handle training if someone does preprocessing.', sent: true, time: '11:32 AM' },
-        { id: 3, sender: 'Vikram Nair', text: 'I\'ll do the EDA + data cleaning part 🔬', sent: false, time: '11:33 AM' },
-        { id: 4, sender: 'Divya Rao', text: 'Great, let\'s meet in the library at 3 PM!', sent: false, time: '11:34 AM' },
-    ],
-    '4I789': [
-        { id: 1, sender: 'Riya Gupta', text: 'Software Engineering class — anyone has the slides?', sent: false, time: '1:00 PM' },
-        { id: 2, sender: 'You', text: 'Sir uploaded them on the portal last night.', sent: true, time: '1:02 PM' },
-        { id: 3, sender: 'Riya Gupta', text: 'Oh nice! I missed the notification 😅 thanks!', sent: false, time: '1:03 PM' },
-    ],
-    '6I123': [
-        { id: 1, sender: 'Harsh Trivedi', text: 'Final year project review is next week. How\'s progress?', sent: false, time: '4:00 PM' },
-        { id: 2, sender: 'You', text: 'Frontend is ready. Working on the API integration now.', sent: true, time: '4:05 PM' },
-        { id: 3, sender: 'Muskan Agarwal', text: 'Same here — ML model is giving 91% accuracy 🎯', sent: false, time: '4:07 PM' },
-        { id: 4, sender: 'You', text: 'That\'s amazing Muskan! What dataset did you use?', sent: true, time: '4:08 PM' },
-    ],
-    '6I456': [
-        { id: 1, sender: 'Tanvi Desai', text: 'Placement cell session today at 3 PM!', sent: false, time: '9:00 AM' },
-        { id: 2, sender: 'You', text: 'Which company? Is it on-campus?', sent: true, time: '9:02 AM' },
-        { id: 3, sender: 'Tanvi Desai', text: 'Yes! Infosys & Wipro. Carry your resume 📄', sent: false, time: '9:03 AM' },
-    ],
-    '6I789': [
-        { id: 1, sender: 'Shubham Joshi', text: 'Midsem results are out guys 🎉', sent: false, time: '3:22 PM' },
-        { id: 2, sender: 'You', text: 'Finally! How\'d you do?', sent: true, time: '3:24 PM' },
-        { id: 3, sender: 'Shubham Joshi', text: '8.4 CGPA! Pretty happy about it 😄', sent: false, time: '3:25 PM' },
-        { id: 4, sender: 'You', text: 'Congrats!! 🔥 You deserved it.', sent: true, time: '3:26 PM' },
-    ],
-};
-
-/* Last message preview per group */
-const LAST_MESSAGES = {
-    '2I123': 'Thanks! Will try that approach.',
-    '2I456': 'Sharing my notes in the group! 📎',
-    '2I789': 'Perfect. Let\'s sync tomorrow evening.',
-    '4I123': 'Could you share your notes please? 🙏',
-    '4I456': 'Great, let\'s meet in the library at 3 PM!',
-    '4I789': 'Oh nice! I missed the notification 😅',
-    '6I123': 'That\'s amazing Muskan! What dataset?',
-    '6I456': 'Yes! Infosys & Wipro. Carry your resume 📄',
-    '6I789': 'Congrats!! 🔥 You deserved it.',
-};
-
-/* Last message times */
-const LAST_TIMES = {
-    '2I123': '9:17 AM', '2I456': '10:05 AM', '2I789': '8:51 AM',
-    '4I123': '2:13 PM', '4I456': '11:34 AM', '4I789': '1:03 PM',
-    '6I123': '4:08 PM', '6I456': '9:03 AM', '6I789': '3:26 PM',
-};
-
-/* ─────────────────────────────────────────────
-   MAIN COMPONENT
-   ───────────────────────────────────────────── */
 const Chat = () => {
+    const { userInfo } = useAuth();
+    
+    // States
+    const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState(null);
+    const [messages, setMessages] = useState([]);
+    
+    const [loadingSidebar, setLoadingSidebar] = useState(true);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+    const [sidebarError, setSidebarError] = useState(null);
+    
     const [inputValue, setInputValue] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const messagesEndRef = useRef(null);
+    const socketRef = useRef(null);
 
-    /* Auto-scroll when group changes */
+    const authConfig = userInfo?.token
+        ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
+        : {};
+
+    // ─────────────────────────────────────────────
+    // Socket Initialization & Listeners
+    // ─────────────────────────────────────────────
+    useEffect(() => {
+        if (!userInfo) return;
+        
+        socketRef.current = io(ENDPOINT);
+        socketRef.current.emit('setup', userInfo);
+
+        socketRef.current.on('receive_message', (newMsg) => {
+            setMessages((prev) => {
+                 // Append only if the message belongs to the currently active group view
+                 if (selectedGroup && newMsg.group_id === selectedGroup._id) {
+                     return [...prev, newMsg];
+                 }
+                 return prev;
+            });
+        });
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
+    }, [userInfo, selectedGroup]);
+
+    // ─────────────────────────────────────────────
+    // Initial Fetch (Groups)
+    // ─────────────────────────────────────────────
+    useEffect(() => {
+        if (!userInfo) return;
+        const fetchGroups = async () => {
+            try {
+                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups`, authConfig);
+                setGroups(data);
+                setSidebarError(null);
+            } catch (error) {
+                console.error('Failed to fetch groups', error);
+                setSidebarError(error.response?.data?.message || 'Network Error');
+            } finally {
+                setLoadingSidebar(false);
+            }
+        };
+        fetchGroups();
+    }, [userInfo]);
+
+    // ─────────────────────────────────────────────
+    // Fetch Messages when Group Selected
+    // ─────────────────────────────────────────────
+    useEffect(() => {
+        if (!selectedGroup || !userInfo) return;
+        
+        const fetchMessages = async () => {
+            setLoadingMessages(true);
+            try {
+                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups/${selectedGroup._id}/messages`, authConfig);
+                setMessages(data);
+                if (socketRef.current) {
+                    socketRef.current.emit('join_chat', selectedGroup._id); // join room
+                }
+            } catch (error) {
+                console.error('Failed to fetch messages', error);
+            } finally {
+                setLoadingMessages(false);
+            }
+        };
+        fetchMessages();
+    }, [selectedGroup, userInfo]);
+
+    // Auto-scroll on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [selectedGroup]);
+    }, [messages, selectedGroup]);
 
-    const filteredGroups = GROUPS.filter(g =>
-        g.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
+    // ─────────────────────────────────────────────
+    // Handlers
+    // ─────────────────────────────────────────────
     const handleSend = (e) => {
         e.preventDefault();
-        setInputValue('');   // static — just clear input
+        if (!inputValue.trim() || !selectedGroup || !userInfo) return;
+
+        const msgData = {
+            sender_id: userInfo._id,
+            group_id: selectedGroup._id,
+            message: inputValue
+        };
+
+        // Emit through socket
+        socketRef.current.emit('send_message', msgData);
+        setInputValue('');
     };
+
+    const handleJoinGroup = async (group) => {
+        // Even if they haven't explicitly joined, we act as if they are joining the view.
+        // We could call the API to join the group to add them to members.
+        try {
+            await axios.post(`${ENDPOINT}/api/chat/groups/${group._id}/join`, {}, authConfig);
+            setSelectedGroup(group);
+        } catch (error) {
+            // Already a member or error, just set it active
+            setSelectedGroup(group);
+        }
+    };
+
+    // Filter
+    const filteredGroups = groups.filter(g =>
+        g.group_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="ct-container">
@@ -127,7 +154,6 @@ const Chat = () => {
                 LEFT SIDEBAR
                 ══════════════════ */}
             <aside className="ct-sidebar">
-                {/* Header */}
                 <div className="ct-sidebar-header">
                     <div className="ct-sidebar-title-row">
                         <span className="ct-sidebar-icon">💬</span>
@@ -147,44 +173,52 @@ const Chat = () => {
                     </div>
                 </div>
 
-                {/* Section label */}
                 <div className="ct-section-label">
                     <span>💻 MAIT — IT SECTIONS</span>
-                    <span className="ct-section-count">{filteredGroups.length}</span>
+                    <span className="ct-section-count">{loadingSidebar ? '…' : filteredGroups.length}</span>
                 </div>
 
-                {/* Group List */}
                 <div className="ct-group-list">
-                    {filteredGroups.length === 0 ? (
-                        <div className="ct-empty-list">No groups match your search.</div>
+                    {loadingSidebar ? (
+                        /* SKELETON SIDEBAR */
+                        [...Array(6)].map((_, i) => (
+                            <div key={i} className="ct-skeleton-item">
+                                <div className="ct-sk-avatar" />
+                                <div className="ct-sk-text">
+                                    <div className="ct-sk-line long" />
+                                    <div className="ct-sk-line short" />
+                                </div>
+                            </div>
+                        ))
+                    ) : sidebarError ? (
+                        <div className="ct-empty-list" style={{ color: '#ef4444' }}>
+                            Error: {sidebarError}. Please log out and back in.
+                        </div>
+                    ) : filteredGroups.length === 0 ? (
+                        <div className="ct-empty-list">No groups available.</div>
                     ) : (
                         filteredGroups.map((group, idx) => {
-                            const isActive = selectedGroup === group;
+                            const isActive = selectedGroup?._id === group._id;
+                            const isMember = group.members?.some(m => m.user === userInfo?._id);
                             return (
                                 <button
-                                    key={group}
+                                    key={group._id}
                                     className={`ct-group-item${isActive ? ' active' : ''}`}
-                                    onClick={() => setSelectedGroup(group)}
-                                    aria-label={`Open chat for group ${group}`}
+                                    onClick={() => handleJoinGroup(group)}
+                                    aria-label={`Open chat for group ${group.group_name}`}
                                 >
-                                    {/* Avatar */}
                                     <div
                                         className="ct-avatar"
                                         style={{ background: AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length] }}
                                     >
-                                        {group.charAt(0)}
+                                        {group.group_name.charAt(0).toUpperCase()}
                                     </div>
-
-                                    {/* Info */}
                                     <div className="ct-group-info">
                                         <div className="ct-group-top">
-                                            <span className="ct-group-name">{group}</span>
-                                            <span className="ct-group-time">{LAST_TIMES[group]}</span>
+                                            <span className="ct-group-name">{group.group_name}</span>
                                         </div>
-                                        <span className="ct-group-preview">{LAST_MESSAGES[group]}</span>
+                                        <span className="ct-group-preview">{group.description || (isMember ? 'Tap to open chat' : 'Tap to join')}</span>
                                     </div>
-
-                                    {/* Active indicator dot */}
                                     {isActive && <span className="ct-active-dot" aria-hidden="true" />}
                                 </button>
                             );
@@ -198,7 +232,6 @@ const Chat = () => {
                 ══════════════════ */}
             <main className="ct-main">
                 {selectedGroup === null ? (
-                    /* ── EMPTY STATE ── */
                     <div className="ct-empty-state">
                         <div className="ct-empty-icon">💬</div>
                         <h3 className="ct-empty-title">Campus Connect</h3>
@@ -210,97 +243,80 @@ const Chat = () => {
                         </div>
                     </div>
                 ) : (
-                    /* ── ACTIVE CHAT STATE ── */
                     <>
                         {/* Chat Header */}
                         <header className="ct-chat-header">
                             <div className="ct-chat-header-left">
                                 <div
                                     className="ct-avatar ct-avatar-md"
-                                    style={{ background: AVATAR_GRADIENTS[GROUPS.indexOf(selectedGroup) % AVATAR_GRADIENTS.length] }}
+                                    style={{ background: AVATAR_GRADIENTS[groups.findIndex(g => g._id === selectedGroup._id) % AVATAR_GRADIENTS.length] || AVATAR_GRADIENTS[0] }}
                                 >
-                                    {selectedGroup.charAt(0)}
+                                    {selectedGroup.group_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="ct-chat-header-text">
-                                    <span className="ct-chat-header-name">{selectedGroup}</span>
-                                    <span className="ct-chat-header-sub">IT Section · MAIT Campus Group</span>
+                                    <span className="ct-chat-header-name">{selectedGroup.group_name}</span>
+                                    <span className="ct-chat-header-sub">{selectedGroup.description || 'MAIT Campus Group'}</span>
                                 </div>
-                            </div>
-                            <div className="ct-chat-header-actions">
-                                <button className="ct-icon-btn" title="Search in chat">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                                    </svg>
-                                </button>
-                                <button className="ct-icon-btn" title="More options">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                                        <circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="19" r="1" fill="currentColor" />
-                                    </svg>
-                                </button>
                             </div>
                         </header>
 
                         {/* Messages */}
                         <div className="ct-messages">
-                            {/* Day separator */}
                             <div className="ct-day-separator"><span>Today</span></div>
 
-                            {(DUMMY_MESSAGES[selectedGroup] || []).map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    className={`ct-message-row${msg.sent ? ' sent' : ' received'}`}
-                                >
-                                    {/* Avatar (received only) */}
-                                    {!msg.sent && (
-                                        <div
-                                            className="ct-msg-avatar"
-                                            style={{ background: AVATAR_GRADIENTS[GROUPS.indexOf(selectedGroup) % AVATAR_GRADIENTS.length] }}
-                                        >
-                                            {msg.sender.charAt(0)}
-                                        </div>
-                                    )}
-
-                                    <div className="ct-bubble-col">
-                                        {/* Sender name for received */}
-                                        {!msg.sent && (
-                                            <span className="ct-sender-name">{msg.sender}</span>
-                                        )}
-                                        <div className={`ct-bubble${msg.sent ? ' ct-bubble-sent' : ' ct-bubble-recv'}`}>
-                                            <p className="ct-bubble-text">{msg.text}</p>
-                                            <span className="ct-bubble-time">
-                                                {msg.time}
-                                                {msg.sent && (
-                                                    <svg className="ct-tick" viewBox="0 0 16 11" fill="currentColor" width="14" height="10">
-                                                        <path d="M11.071.653a.75.75 0 0 1 .025 1.06l-5.5 5.75a.75.75 0 0 1-1.085 0l-2.5-2.61a.75.75 0 1 1 1.085-1.034l1.957 2.045 4.958-5.186a.75.75 0 0 1 1.06-.025z" />
-                                                        <path d="M14.071.653a.75.75 0 0 1 .025 1.06l-5.5 5.75a.75.75 0 0 1-.073.065l.073-.065 1.475-1.543L14.01.678a.75.75 0 0 1 1.06-.025z" />
-                                                    </svg>
-                                                )}
-                                            </span>
-                                        </div>
+                            {loadingMessages ? (
+                                /* SKELETON MESSAGES */
+                                [false, true, false, false, true].map((sent, i) => (
+                                    <div key={i} className={`ct-skeleton-bubble ${sent ? 'sent' : ''}`}>
+                                        <div className={`ct-sk-bubble ${sent ? 'sent' : ''}`} />
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                messages.map((msg) => {
+                                    const isSent = msg.sender_id?._id === userInfo?._id;
+                                    const timeStr = new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+                                    
+                                    return (
+                                        <div
+                                            key={msg._id}
+                                            className={`ct-message-row${isSent ? ' sent' : ' received'}`}
+                                        >
+                                            {!isSent && (
+                                                <div
+                                                    className="ct-msg-avatar"
+                                                    style={{ background: AVATAR_GRADIENTS[0] }}
+                                                >
+                                                    {msg.sender_id?.name ? msg.sender_id.name.charAt(0).toUpperCase() : '?'}
+                                                </div>
+                                            )}
 
+                                            <div className="ct-bubble-col">
+                                                {!isSent && (
+                                                    <span className="ct-sender-name">{msg.sender_id?.name || 'Unknown User'}</span>
+                                                )}
+                                                <div className={`ct-bubble${isSent ? ' ct-bubble-sent' : ' ct-bubble-recv'}`}>
+                                                    <p className="ct-bubble-text">{msg.message}</p>
+                                                    <span className="ct-bubble-time">
+                                                        {timeStr}
+                                                        {isSent && (
+                                                            <svg className="ct-tick" viewBox="0 0 16 11" fill="currentColor" width="14" height="10">
+                                                                <path d="M11.071.653a.75.75 0 0 1 .025 1.06l-5.5 5.75a.75.75 0 0 1-1.085 0l-2.5-2.61a.75.75 0 1 1 1.085-1.034l1.957 2.045 4.958-5.186a.75.75 0 0 1 1.06-.025z" />
+                                                                <path d="M14.071.653a.75.75 0 0 1 .025 1.06l-5.5 5.75a.75.75 0 0 1-.073.065l.073-.065 1.475-1.543L14.01.678a.75.75 0 0 1 1.06-.025z" />
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                             <div ref={messagesEndRef} />
                         </div>
 
                         {/* Input Footer */}
                         <footer className="ct-footer">
-                            <button className="ct-icon-btn ct-emoji-btn" title="Emoji">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                                    <line x1="9" y1="9" x2="9.01" y2="9" />
-                                    <line x1="15" y1="9" x2="15.01" y2="9" />
-                                </svg>
-                            </button>
-                            <button className="ct-icon-btn" title="Attach file">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                                </svg>
-                            </button>
-
-                            <form className="ct-input-form" onSubmit={handleSend}>
+                            <form className="ct-input-form" onSubmit={handleSend} style={{width: '100%'}}>
                                 <input
                                     className="ct-input"
                                     type="text"

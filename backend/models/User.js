@@ -16,15 +16,16 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['Student', 'Admin', 'Librarian'], default: 'Student' },
   branch: { type: String },
   year: { type: Number },
-  pinnedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }]
+  roll_number: { type: String },
+  pinnedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
+  resetPasswordToken:  { type: String },
+  resetPasswordExpire: { type: Date },
 }, {
   timestamps: true
 });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
-  }
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

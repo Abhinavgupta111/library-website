@@ -1258,3 +1258,159 @@ body.dark-mode .why-tag-red {
         padding: 1rem;
     }
 }
+
+/* ═══════════════════════════════════════════════
+   SESSION CHECK-IN / OUT WIDGET
+   ═══════════════════════════════════════════════ */
+.session-widget {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--radius-lg, 14px);
+    padding: 1rem 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s;
+}
+.session-widget:hover {
+    border-color: rgba(99,102,241,0.3);
+}
+
+.session-widget-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+/* Animated pulse dot */
+.session-pulse-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 0 rgba(16,185,129,0.5);
+    animation: session-pulse 2s infinite;
+    flex-shrink: 0;
+}
+@keyframes session-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+    70%  { box-shadow: 0 0 0 9px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+.session-widget-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main, #f8fafc);
+    margin: 0;
+}
+.session-widget-sub {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0.15rem 0 0 0;
+}
+
+.session-widget-right {
+    flex-shrink: 0;
+}
+
+.session-purpose-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.session-purpose-input {
+    min-width: 200px;
+    font-size: 0.875rem !important;
+    padding: 0.4rem 0.75rem !important;
+}
+
+.session-books-list {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.06);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border-left: 2px solid #6366f1;
+}
+
+.session-active-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.custom-book-search-wrap {
+    position: relative;
+}
+
+.session-book-input {
+    min-width: 220px;
+    font-size: 0.85rem !important;
+    padding: 0.35rem 0.6rem !important;
+}
+
+.book-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #0f172a;
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    margin-top: 0.3rem;
+    z-index: 50;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    padding: 0.25rem;
+}
+
+.book-search-option {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-search-option:hover {
+    background: rgba(99,102,241,0.25);
+    color: #fff;
+}
+
+.book-search-empty {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+    font-style: italic;
+}
+
+.check-out-btn {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #f87171;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.check-out-btn:hover {
+    background: rgba(239,68,68,0.22);
+    border-color: #ef4444;
+    color: #fff;
+}
+
+@media (max-width: 600px) {
+    .session-widget { flex-direction: column; align-items: flex-start; }
+    .session-purpose-input { min-width: 140px; }
+}

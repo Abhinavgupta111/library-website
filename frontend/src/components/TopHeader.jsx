@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
+import HelpModal from './HelpModal';
 import './TopHeader.css';
 
 const TopHeader = () => {
+    const navigate = useNavigate();
     const { isDarkMode, toggleTheme, isSidebarCollapsed, toggleSidebar } = useTheme();
     const [showHelp, setShowHelp] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    
+    // Help Modal State
+    const [activeModal, setActiveModal] = useState(null);
 
     const helpRef = useRef(null);
     const notifRef = useRef(null);
@@ -35,6 +41,7 @@ const TopHeader = () => {
     }, []);
 
     return (
+        <>
         <header className="top-header">
             {/* Sidebar Toggle Button */}
             <button
@@ -110,12 +117,19 @@ const TopHeader = () => {
                         <div className="dropdown-panel">
                             <div className="dropdown-header">Quick Help</div>
                             {[
-                                { icon: '📖', label: 'How to borrow a book' },
-                                { icon: '💬', label: 'Using campus chat groups' },
-                                { icon: '📅', label: 'Viewing upcoming events' },
-                                { icon: '⚙️', label: 'Account & settings' },
+                                { type: 'borrow', icon: '📖', label: 'How to borrow a book' },
+                                { type: 'chat', icon: '💬', label: 'Using campus chat groups' },
+                                { type: 'events', icon: '📅', label: 'Viewing upcoming events' },
+                                { type: 'settings', icon: '⚙️', label: 'Account & settings' },
                             ].map((item, i) => (
-                                <div key={i} className="dropdown-item" onClick={() => setShowHelp(false)}>
+                                <div key={i} className="dropdown-item" onClick={() => { 
+                                    setShowHelp(false); 
+                                    if (item.type === 'settings') {
+                                        navigate('/settings');
+                                    } else {
+                                        setActiveModal(item.type); 
+                                    }
+                                }}>
                                     <span>{item.icon}</span> {item.label}
                                 </div>
                             ))}
@@ -157,6 +171,10 @@ const TopHeader = () => {
                 </div>
             </div>
         </header>
+        {activeModal && (
+            <HelpModal type={activeModal} onClose={() => setActiveModal(null)} />
+        )}
+        </>
     );
 };
 

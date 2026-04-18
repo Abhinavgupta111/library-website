@@ -9,23 +9,42 @@ const ENDPOINT = 'http://localhost:5000';
 const Home = () => {
     const navigate = useNavigate();
     const { userInfo } = useAuth();
-    const [borrowedCount, setBorrowedCount] = useState(0);
     const [totalBooks, setTotalBooks] = useState(0);
     const [eventCount, setEventCount] = useState(0);
     const [featuredBooks, setFeaturedBooks] = useState([]);
     const [upcomingEvents, setUpcomingEvents] = useState([]);
 
+    // Session tracking
+    const [activeCount, setActiveCount] = useState(0);
+    const [mySession, setMySession] = useState(null);  // current user's IN session
+    const [sessionPurpose, setSessionPurpose] = useState('');
+    const [sessionLoading, setSessionLoading] = useState(false);
+    const [showPurposeInput, setShowPurposeInput] = useState(false);
+    const [allBooksList, setAllBooksList] = useState([]);
+    const [selectedBook, setSelectedBook] = useState('');
+    const [bookSearchStr, setBookSearchStr] = useState('');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    const authConfig = userInfo?.token
+        ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
+        : {};
+
+    const fetchSessions = () => {
+        axios.get(`${ENDPOINT}/api/sessions?status=IN`)
+            .then(res => {
+                setActiveCount(res.data.activeCount || 0);
+                // Find if current user has an active session
+                if (userInfo) {
+                    const mine = (res.data.sessions || []).find(
+                        s => s.studentId?.toString() === userInfo._id?.toString()
+                    );
+                    setMySession(mine || null);
+                }
+            })
+            .catch(() => {});
+    };
+
     useEffect(() => {
-        const config = userInfo?.token
-            ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
-            : {};
-
-        if (userInfo?.token) {
-            axios.get(`${ENDPOINT}/api/books/my-borrowed`, config)
-                .then(res => setBorrowedCount(res.data.length))
-                .catch(() => { });
-        }
-
         axios.get(`${ENDPOINT}/api/events`)
             .then(res => {
                 setEventCount(res.data.length);
@@ -33,14 +52,71 @@ const Home = () => {
             })
             .catch(() => { });
 
-        axios.get(`${ENDPOINT}/api/books`, config)
+        axios.get(`${ENDPOINT}/api/books?limit=1000`)
             .then(res => {
-                const sorted = [...res.data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setTotalBooks(res.data.length);
+                const allBooks = res.data.books || res.data;
+                setAllBooksList(allBooks);
+                const sorted = [...allBooks].sort((a, b) => (b.publishedYear || 0) - (a.publishedYear || 0));
+                setTotalBooks(allBooks.length);
                 setFeaturedBooks(sorted.slice(0, 4));
             })
             .catch(() => { });
+
+        fetchSessions();
     }, [userInfo]);
+
+    const handleCheckIn = async () => {
+        if (!userInfo) { navigate('/login'); return; }
+        setSessionLoading(true);
+        try {
+            const { data } = await axios.post(`${ENDPOINT}/api/sessions/entry`, {
+                studentId: userInfo._id,
+                name: userInfo.name,
+                purpose: sessionPurpose || 'General Study',
+            }, authConfig);
+            setMySession(data);
+            setShowPurposeInput(false);
+            setSessionPurpose('');
+            fetchSessions();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Check-in failed.');
+        } finally {
+            setSessionLoading(false);
+        }
+    };
+
+    const handleCheckOut = async () => {
+        if (!mySession) return;
+        setSessionLoading(true);
+        try {
+            await axios.post(`${ENDPOINT}/api/sessions/exit/${mySession._id}`, {}, authConfig);
+            setMySession(null);
+            fetchSessions();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Check-out failed.');
+        } finally {
+            setSessionLoading(false);
+        }
+    };
+
+    const handleLogBook = async () => {
+        if (!mySession || !selectedBook) return;
+        setSessionLoading(true);
+        try {
+            const { data } = await axios.put(`${ENDPOINT}/api/sessions/${mySession._id}`, {
+                booksRead: [selectedBook]
+            }, authConfig);
+            setMySession(data);
+            setSelectedBook('');
+            setBookSearchStr('');
+            setDropdownOpen(false);
+            fetchSessions();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to log book.');
+        } finally {
+            setSessionLoading(false);
+        }
+    };
 
     const coverColors = ['placeholder-cover-1', 'placeholder-cover-2', 'placeholder-cover-3', 'placeholder-cover-4'];
 
@@ -80,6 +156,104 @@ const Home = () => {
                     <span className="mait-badge">Affiliated to GGSIPU</span>
                 </div>
             </div>
+
+            {/* ── Session Check-In/Out Widget ── */}
+            {userInfo && (
+                <div className="session-widget">
+                    <div className="session-widget-left">
+                        <div className="session-pulse-dot" />
+                        <div>
+                            <p className="session-widget-title">
+                                {mySession ? '✅ You are currently in the library' : '📍 Check in to the library'}
+                            </p>
+                            {mySession && (
+                                <p className="session-widget-sub">
+                                    Since {new Date(mySession.entryTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                    {mySession.purpose ? ` · ${mySession.purpose}` : ''}
+                                </p>
+                            )}
+                            {mySession && mySession.booksRead && mySession.booksRead.length > 0 && (
+                                <div className="session-books-list">
+                                    <strong>Books Read: </strong> 
+                                    {mySession.booksRead.map(b => b.title).join(', ')}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="session-widget-right">
+                        {!mySession ? (
+                            showPurposeInput ? (
+                                <div className="session-purpose-row">
+                                    <input
+                                        type="text"
+                                        placeholder="Purpose (e.g. Study, Project)"
+                                        className="form-control glass-input session-purpose-input"
+                                        value={sessionPurpose}
+                                        onChange={e => setSessionPurpose(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCheckIn()}
+                                        autoFocus
+                                    />
+                                    <button className="btn btn-primary btn-sm" onClick={handleCheckIn} disabled={sessionLoading}>
+                                        {sessionLoading ? '…' : 'Check In'}
+                                    </button>
+                                    <button className="btn btn-outline btn-sm" onClick={() => setShowPurposeInput(false)}>Cancel</button>
+                                </div>
+                            ) : (
+                                <button className="btn btn-primary btn-sm" onClick={() => setShowPurposeInput(true)}>
+                                    🚪 Check In
+                                </button>
+                            )
+                        ) : (
+                            <div className="session-active-actions">
+                                <div className="custom-book-search-wrap">
+                                    <input 
+                                        type="text"
+                                        className="form-control glass-input session-book-input"
+                                        placeholder="Search book to log..."
+                                        value={bookSearchStr}
+                                        onChange={e => {
+                                            setBookSearchStr(e.target.value);
+                                            if (selectedBook) setSelectedBook('');
+                                            setDropdownOpen(true);
+                                        }}
+                                        onFocus={() => setDropdownOpen(true)}
+                                    />
+                                    {dropdownOpen && bookSearchStr && (
+                                        <div className="book-search-dropdown glass-panel">
+                                            {allBooksList
+                                                .filter(b => b.title.toLowerCase().includes(bookSearchStr.toLowerCase()))
+                                                .slice(0, 8)
+                                                .map(b => (
+                                                    <div 
+                                                        key={b._id} 
+                                                        className="book-search-option"
+                                                        onClick={() => { 
+                                                            setSelectedBook(b._id); 
+                                                            setBookSearchStr(b.title); 
+                                                            setDropdownOpen(false); 
+                                                        }}
+                                                    >
+                                                        {b.title}
+                                                    </div>
+                                                ))
+                                            }
+                                            {allBooksList.filter(b => b.title.toLowerCase().includes(bookSearchStr.toLowerCase())).length === 0 && (
+                                                <div className="book-search-empty">No books found</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className="btn btn-sm btn-outline-white" onClick={handleLogBook} disabled={sessionLoading || !selectedBook}>
+                                    ➕ Add
+                                </button>
+                                <button className="btn btn-sm check-out-btn" onClick={handleCheckOut} disabled={sessionLoading}>
+                                    {sessionLoading ? '…' : '🚶 Check Out'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ── HOD & Library Head Messages ── */}
             <div className="messages-row">
@@ -239,10 +413,6 @@ const Home = () => {
                     </div>
 
                     <div className="why-library-footer">
-                        <div className="why-footer-info">
-                            <span>🕘 Open: Mon – Sat &nbsp;|&nbsp; 9:00 AM – 5:00 PM</span>
-                            <span>📍 Ground Floor, IT Block, MAIT</span>
-                        </div>
                         <button className="btn btn-sm btn-browse" onClick={() => navigate('/books')}>Browse Collection →</button>
                     </div>
                 </div>
@@ -252,7 +422,7 @@ const Home = () => {
             <div className="hero-banner">
                 <div className="hero-content">
                     <h1>Welcome back, {userInfo?.name || 'Student'} 👋</h1>
-                    <p>You have <strong>{borrowedCount} book{borrowedCount !== 1 ? 's' : ''}</strong> currently borrowed. Stay on top of your reading!</p>
+                    <p>Explore our collection of <strong>{totalBooks.toLocaleString()} books</strong>. visit us at the IT Department Library!</p>
                 </div>
                 <div className="hero-actions">
                     <button className="btn btn-secondary" onClick={() => navigate('/books')}>Browse Library</button>
@@ -260,19 +430,27 @@ const Home = () => {
                 </div>
             </div>
 
+
+
             {/* ── KPI Cards ── */}
             <div className="kpi-grid">
-                <div className="kpi-card" onClick={() => navigate('/books')}>
-                    <div className="kpi-icon-wrapper bg-primary-light text-primary">
+                {/* Students currently in library */}
+                <div className="kpi-card">
+                    <div className="kpi-icon-wrapper" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>
                         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">{borrowedCount}</span>
-                        <span className="kpi-label">Books Borrowed</span>
+                        <span className="kpi-value">{activeCount}</span>
+                        <span className="kpi-label">Students in Library</span>
                     </div>
                 </div>
+
+                {/* Chat */}
                 <div className="kpi-card" onClick={() => navigate('/chat')}>
                     <div className="kpi-icon-wrapper bg-accent-light" style={{ color: 'var(--accent)' }}>
                         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -284,6 +462,8 @@ const Home = () => {
                         <span className="kpi-label">Unread Messages</span>
                     </div>
                 </div>
+
+                {/* Events */}
                 <div className="kpi-card" onClick={() => navigate('/events')}>
                     <div className="kpi-icon-wrapper bg-warning-light text-warning">
                         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -298,16 +478,17 @@ const Home = () => {
                         <span className="kpi-label">Upcoming Events</span>
                     </div>
                 </div>
+
+                {/* Total books */}
                 <div className="kpi-card" onClick={() => navigate('/books')}>
-                    <div className="kpi-icon-wrapper bg-success-light text-success">
+                    <div className="kpi-icon-wrapper bg-primary-light text-primary">
                         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
                         </svg>
                     </div>
                     <div className="kpi-details">
-                        <span className="kpi-value">{totalBooks}</span>
-                        <span className="kpi-label">Available Books</span>
+                        <span className="kpi-value">{totalBooks.toLocaleString()}</span>
+                        <span className="kpi-label">Books in Collection</span>
                     </div>
                 </div>
             </div>

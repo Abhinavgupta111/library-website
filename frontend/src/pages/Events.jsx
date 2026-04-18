@@ -37,7 +37,16 @@ const Events = () => {
 
             <div className="events-list">
                 {loading ? (
-                    <p>Loading events...</p>
+                    [...Array(3)].map((_, i) => (
+                        <Card key={i} className="event-card" style={{ opacity: 0.7, borderLeft: '4px solid #334155' }}>
+                            <div style={{ height: '24px', width: '60%', background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite', borderRadius: '4px', marginBottom: '1rem' }}></div>
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                <div style={{ height: '16px', width: '30%', background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite', borderRadius: '4px' }}></div>
+                                <div style={{ height: '16px', width: '30%', background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite', borderRadius: '4px' }}></div>
+                            </div>
+                            <div style={{ height: '60px', width: '100%', background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 2s infinite', borderRadius: '4px' }}></div>
+                        </Card>
+                    ))
                 ) : events.length > 0 ? (
                     events.map(event => (
                         <Card key={event._id} title={event.title} className="event-card" style={getUrgencyStyle(event.event_date)}>

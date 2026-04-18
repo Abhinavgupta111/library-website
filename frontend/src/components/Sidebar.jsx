@@ -41,7 +41,7 @@ const Sidebar = () => {
                     </NavLink>
                 </div>
 
-                {userInfo?.role === 'admin' && (
+                {(userInfo?.role === 'Admin' || userInfo?.role === 'Librarian') && (
                     <div className="nav-section">
                         {!isSidebarCollapsed && <div className="nav-label">Administration</div>}
                         <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Admin Dashboard">

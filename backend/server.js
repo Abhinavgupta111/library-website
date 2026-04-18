@@ -4,11 +4,13 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import { setIO } from './utils/socket.js';
 
 import authRoutes from './routes/auth.js';
 import bookRoutes from './routes/books.js';
 import eventRoutes from './routes/events.js';
 import chatRoutes from './routes/chat.js';
+import sessionRoutes from './routes/sessions.js';
 import Message from './models/Message.js';
 import multer from 'multer';
 import path from 'path';
@@ -27,6 +29,9 @@ const io = new Server(server, {
   }
 });
 
+// Register io singleton so controllers can emit events
+setIO(io);
+
 app.use(cors());
 app.use(express.json());
 
@@ -34,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 

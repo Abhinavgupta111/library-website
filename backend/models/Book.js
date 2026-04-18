@@ -7,6 +7,10 @@ const bookSchema = new mongoose.Schema({
   isbn: { type: String, required: true, unique: true },
   total_copies: { type: Number, required: true, default: 1 },
   available_copies: { type: Number, required: true, default: 1 },
+  publishedYear: { type: Number },
+  publisher: { type: String },
+  edition: { type: String },
+  pages: { type: Number },
   shelf_location: {
     block: { type: String },
     rack: { type: String },
@@ -22,6 +26,8 @@ const bookSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+bookSchema.index({ title: 'text', author: 'text' });
 
 const Book = mongoose.model('Book', bookSchema);
 export default Book;

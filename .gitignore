@@ -33,3 +33,10 @@ frontend/node_modules/
 backend/node_modules/
 frontend/dist/
 backend/uploads/
+
+# Secrets & generated files — do NOT commit
+backend/google-credentials.json
+library-checkin-493717-9ec65f64326c.json
+backend/checkin_log.xlsx
+backend/booksData.json
+backend/response.json

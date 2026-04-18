@@ -6,18 +6,46 @@ import IssueRequest from '../models/IssueRequest.js';
 // @access  Public
 export const getBooks = async (req, res) => {
   try {
-    const keyword = req.query.keyword
-      ? {
-          $or: [
-            { title: { $regex: req.query.keyword, $options: 'i' } },
-            { author: { $regex: req.query.keyword, $options: 'i' } },
-            { category: { $regex: req.query.keyword, $options: 'i' } }
-          ],
-        }
-      : {};
+    const query = {};
 
-    const books = await Book.find({ ...keyword });
-    res.json(books);
+    if (req.query.keyword && req.query.keyword.trim() !== '') {
+      query.$or = [
+        { title: { $regex: req.query.keyword, $options: 'i' } },
+        { author: { $regex: req.query.keyword, $options: 'i' } },
+        { category: { $regex: req.query.keyword, $options: 'i' } }
+      ];
+    }
+
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+
+    if (req.query.available === 'true') {
+      query.available_copies = { $gt: 0 };
+    }
+
+    let sortObj = { publishedYear: -1 };
+    if (req.query.sort) {
+      if (req.query.sort === 'title') sortObj = { title: 1 };
+      else if (req.query.sort === '-title') sortObj = { title: -1 };
+      else if (req.query.sort === 'year') sortObj = { publishedYear: 1 };
+      else if (req.query.sort === '-year') sortObj = { publishedYear: -1 };
+    }
+
+    // Determine if pagination is requested
+    if (req.query.page || req.query.limit) {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 20;
+      const skip = (page - 1) * limit;
+
+      const total = await Book.countDocuments(query);
+      const books = await Book.find(query).sort(sortObj).limit(limit).skip(skip);
+      res.json({ books, page, pages: Math.ceil(total / limit), total });
+    } else {
+      // Backward compatibility for existing frontend
+      const books = await Book.find(query).sort(sortObj);
+      res.json(books);
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -201,6 +229,41 @@ export const returnBook = async (req, res) => {
       } else {
         res.status(400).json({ message: 'Book not issued to this user or already returned' });
       }
+    } else {
+      res.status(404).json({ message: 'Book not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update a book
+// @route   PUT /api/books/:id
+// @access  Private/Admin|Librarian
+export const updateBook = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (book) {
+      Object.assign(book, req.body);
+      const updatedBook = await book.save();
+      res.json(updatedBook);
+    } else {
+      res.status(404).json({ message: 'Book not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a book
+// @route   DELETE /api/books/:id
+// @access  Private/Admin|Librarian
+export const deleteBook = async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (book) {
+      await book.deleteOne();
+      res.json({ message: 'Book removed' });
     } else {
       res.status(404).json({ message: 'Book not found' });
     }
