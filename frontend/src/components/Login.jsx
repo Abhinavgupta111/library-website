@@ -73,12 +73,7 @@ const Login = () => {
                     </div>
 
                     <div className="auth-field">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                            <label className="auth-label" htmlFor="lg-password">Password</label>
-                            <Link to="/forgot-password" style={{ fontSize: '0.75rem', color: '#60a5fa', textDecoration: 'none', fontWeight: 600 }}>
-                                Forgot Password?
-                            </Link>
-                        </div>
+                        <label className="auth-label" htmlFor="lg-password">Password</label>
                         <input
                             id="lg-password"
                             type="password"
@@ -89,6 +84,13 @@ const Login = () => {
                             required
                             autoComplete="current-password"
                         />
+                    </div>
+
+                    {/* Forgot Password Link */}
+                    <div style={{ textAlign: 'right', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+                        <Link to="/forgot-password" style={{ fontSize: '0.8rem', color: '#60a5fa', textDecoration: 'none', fontWeight: 600 }}>
+                            Forgot Password?
+                        </Link>
                     </div>
 
                     <button type="submit" className="auth-submit-btn">
