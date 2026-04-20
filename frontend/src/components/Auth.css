@@ -313,4 +313,14 @@
 @media (max-width: 480px) {
     .auth-card { padding: 1.75rem 1.25rem; border-radius: 16px; }
     .auth-form-row { grid-template-columns: 1fr; }
+    .auth-heading h1 { font-size: 1.3rem; }
+}
+
+@media (max-width: 360px) {
+    .auth-page { padding: 1rem 0.75rem; }
+    .auth-card { padding: 1.5rem 1rem; border-radius: 14px; }
+    .auth-heading h1 { font-size: 1.2rem; }
+    .auth-brand-icon { width: 44px; height: 44px; font-size: 1.25rem; }
+    .auth-submit-btn { font-size: 0.875rem; padding: 0.7rem; }
+    .auth-input, .auth-select { font-size: 0.8rem; padding: 0.6rem 0.75rem; }
 }

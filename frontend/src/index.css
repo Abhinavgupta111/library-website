@@ -101,6 +101,10 @@ body.dark-mode {
 
 html {
     scroll-behavior: smooth;
+    /* Prevent horizontal scrollbar on any page */
+    overflow-x: hidden;
+    /* Fluid base font — scales gently from 14px → 16px */
+    font-size: clamp(14px, 0.875rem + 0.25vw, 16px);
 }
 
 body {
@@ -111,6 +115,14 @@ body {
     -moz-osx-font-smoothing: grayscale;
     transition: background-color var(--transition-slow), color var(--transition-slow);
     line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* ── Responsive Images ── */
+img, video, svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 #root {

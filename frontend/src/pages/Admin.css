@@ -1,14 +1,14 @@
-/* ── Page Header ── */
 .admin-page-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 1.75rem;
 }
 .admin-page-header h2 {
     margin: 0;
     color: var(--primary, #6366f1);
-    font-size: 1.55rem;
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
     font-weight: 700;
 }
 .admin-role-badge {
@@ -229,10 +229,44 @@
 .report-file:hover { text-decoration: underline; }
 
 /* ── Responsive ── */
+/* Tablets */
+@media (max-width: 1024px) {
+    .admin-form-grid { grid-template-columns: 1fr 1fr; }
+    .admin-card-wide { padding: 1.5rem; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .admin-form-grid { grid-template-columns: 1fr; }
+    .shelf-inputs { grid-template-columns: 1fr 1fr; }
+    .admin-card-wide { padding: 1.25rem; }
+    .admin-card-narrow { max-width: 100%; padding: 1.25rem; }
+}
+
+/* Small mobile */
 @media (max-width: 640px) {
     .admin-form-grid { grid-template-columns: 1fr; }
-    .shelf-inputs { grid-template-columns: 1fr 1fr 1fr; }
+    .shelf-inputs { grid-template-columns: 1fr; }
     .admin-card-wide { padding: 1.1rem; }
+}
+
+/* Tiny mobile */
+@media (max-width: 480px) {
+    .admin-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .admin-tabs { gap: 0.375rem; }
+    .tab-btn { padding: 0.375rem 0.875rem; font-size: 0.82rem; }
+    .sessions-table { font-size: 0.8rem; }
+    .sessions-table th, .sessions-table td { padding: 0.55rem 0.625rem; }
+}
+
+/* Smallest */
+@media (max-width: 360px) {
+    .admin-card-wide { padding: 0.875rem; }
+    .shelf-inputs { grid-template-columns: 1fr; }
+    .tab-btn { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
 }
 
 /* ── Live Badge ── */

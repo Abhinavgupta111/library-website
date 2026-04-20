@@ -49,12 +49,21 @@
     animation: fadeIn var(--transition-fast);
 }
 
-@media (max-width: 1024px) {
+/* ── Laptops (1025px – 1280px) ── */
+@media (max-width: 1280px) {
     .dashboard-content {
-        padding: 1.5rem 1.5rem;
+        padding: 1.75rem 1.75rem;
     }
 }
 
+/* ── Tablets (769px – 1024px) ── */
+@media (max-width: 1024px) {
+    .dashboard-content {
+        padding: 1.5rem 1.25rem;
+    }
+}
+
+/* ── Mobile (≤768px) ── */
 @media (max-width: 768px) {
     .dashboard-main-wrapper {
         margin-left: 0 !important;
@@ -62,6 +71,8 @@
 
     .dashboard-content {
         padding: 1.25rem 1rem;
+        /* Prevent any child from causing horizontal overflow */
+        overflow-x: hidden;
     }
 
     .mobile-overlay {
@@ -69,8 +80,23 @@
     }
 }
 
+/* ── Small mobile (≤640px) ── */
+@media (max-width: 640px) {
+    .dashboard-content {
+        padding: 1rem 0.875rem;
+    }
+}
+
+/* ── Tiny mobile (≤480px) ── */
 @media (max-width: 480px) {
     .dashboard-content {
-        padding: 1rem 0.75rem;
+        padding: 0.875rem 0.75rem;
+    }
+}
+
+/* ── Smallest (≤360px) ── */
+@media (max-width: 360px) {
+    .dashboard-content {
+        padding: 0.75rem 0.625rem;
     }
 }

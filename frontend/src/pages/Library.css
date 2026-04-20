@@ -8,13 +8,14 @@
 /* ── Header ── */
 .library-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 1.5rem;
   gap: 1rem;
 }
 .library-title {
-  font-size: 1.6rem;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
   font-weight: 700;
   color: var(--text-main);
   margin: 0 0 0.2rem 0;
@@ -30,7 +31,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   align-items: center;
 }
 
@@ -120,7 +121,7 @@
 .results-info {
   font-size: 0.85rem;
   color: var(--text-sub);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -141,9 +142,10 @@
 
 /* ── Books Grid ── */
 .books-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 1.1rem;
+    display: grid;
+    /* min() prevents the card ever being wider than 100% of its container */
+    grid-template-columns: repeat(auto-fill, minmax(min(270px, 100%), 1fr));
+    gap: 1.1rem;
 }
 
 /* ── Book Card ── */
@@ -353,13 +355,109 @@
 }
 
 /* ── Responsive ── */
-@media (max-width: 768px) {
-  .library-container { padding: 1rem; }
-  .filter-bar { gap: 0.6rem; }
-  .search-wrap { min-width: 100%; }
-  .filter-select { flex: 1; min-width: 130px; }
-  .books-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+/* Tablets */
+@media (max-width: 1024px) {
+    .library-container { padding: 1.25rem; }
+    .books-grid { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
 }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .library-container {
+        padding: 1.25rem 1rem;
+    }
+
+    /* More space below the header on mobile */
+    .library-header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        gap: 0.5rem;
+    }
+
+    .library-title {
+        font-size: 1.35rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .library-subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Each filter element stacks vertically with generous gap */
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.875rem;         /* ← vertical breathing room */
+        margin-bottom: 1.25rem;
+    }
+
+    /* Full-width search */
+    .search-wrap {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    /* Full-width dropdowns, taller for easier touch */
+    .filter-select {
+        width: 100%;
+        min-width: unset;
+        padding: 0.65rem 0.875rem;
+        font-size: 0.9rem;
+    }
+
+    /* Toggle row — left aligned with extra top breathing room */
+    .availability-toggle {
+        padding: 0.25rem 0;
+        gap: 0.65rem;
+    }
+
+    .toggle-label {
+        font-size: 0.9rem;
+    }
+
+    /* Results info row */
+    .results-info {
+        margin-bottom: 1.25rem;
+        font-size: 0.875rem;
+    }
+
+    .books-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.875rem;
+    }
+}
+
+/* Small mobile */
+@media (max-width: 640px) {
+    .library-container { padding: 1rem 0.875rem; }
+    .library-header { margin-bottom: 1.25rem; }
+
+    /* All filter items already column — keep gap comfortable */
+    .filter-bar { gap: 0.875rem; margin-bottom: 1.25rem; }
+    .search-wrap, .filter-select { width: 100%; min-width: unset; }
+
+    /* Taller search input for easier tap */
+    .search-wrap input {
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+    }
+
+    .books-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Tiny mobile */
 @media (max-width: 520px) {
-  .books-grid { grid-template-columns: 1fr; }
+    .books-grid { grid-template-columns: 1fr; gap: 0.875rem; }
+}
+
+/* Smallest */
+@media (max-width: 360px) {
+    .library-container { padding: 0.875rem 0.75rem; }
+    .library-header { margin-bottom: 1rem; }
+    .filter-bar { gap: 0.75rem; margin-bottom: 1rem; }
+    .books-grid { gap: 0.625rem; }
+    .book-card-body { padding: 0.875rem 0.875rem 1rem; }
+    .results-info { margin-bottom: 1rem; }
 }

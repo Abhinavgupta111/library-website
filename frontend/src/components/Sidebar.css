@@ -16,6 +16,7 @@
     z-index: 100;
     transition:
         width var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1),
+        transform var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1),
         background-color var(--transition-slow),
         border-color var(--transition-slow);
     overflow: hidden;
@@ -291,15 +292,33 @@
    RESPONSIVE SIDEBAR
    ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
+    /* Always start off-screen on mobile */
     .sidebar {
         transform: translateX(-100%);
-        z-index: 100;
+        z-index: 200;
         width: 260px !important;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.35);
     }
-    
-    /* When sidebar is actually open on mobile (mapped to !isSidebarCollapsed in JSX) */
-    .sidebar-is-open .sidebar {
+
+    /* Slide in when sidebar is NOT collapsed
+       (dashboard-layout has class sidebar-is-open when !isSidebarCollapsed) */
+    .dashboard-layout:not(.sidebar-is-collapsed) .sidebar {
         transform: translateX(0);
+    }
+
+    /* Collapsed state on mobile — still hidden */
+    .dashboard-layout.sidebar-is-collapsed .sidebar {
+        transform: translateX(-100%);
+    }
+
+    /* Nav items in mobile drawer get a bit more padding for easier tap targets */
+    .nav-item {
+        padding: 0.75rem 0.875rem;
+        font-size: 0.925rem;
+    }
+
+    /* Profile area padding bump */
+    .sidebar-profile {
+        padding: 1.1rem;
     }
 }
