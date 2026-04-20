@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
-const ENDPOINT = 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -297,127 +297,6 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* ── Why Visit the Library? ── */}
-            <div className="why-library-section">
-                <div className="why-library-panel">
-                    <div className="why-library-header">
-                        <span className="why-library-badge">✨ IT Department Library</span>
-                        <h2 className="why-library-title">Why Visit the Library Instead of Reading Online?</h2>
-                        <p className="why-library-subtitle">Screens inform, but libraries transform.</p>
-                    </div>
-
-                    <div className="why-library-grid">
-
-                        {/* Card 1 — Deep Focus */}
-                        <div className="why-card why-card-blue">
-                            <div className="why-card-glow why-glow-blue"></div>
-                            <div className="why-card-top">
-                                <div className="why-icon-wrap why-icon-blue">
-                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M12 6v6l4 2" />
-                                    </svg>
-                                </div>
-                                <div className="why-card-number">01</div>
-                            </div>
-                            <h4 className="why-card-title">Deep Focus Environment</h4>
-                            <p className="why-card-desc">Quiet, distraction-free atmosphere that helps you focus and retain far more than browsing at home.</p>
-                            <div className="why-card-footer">
-                                <span className="why-card-tag why-tag-blue">🧠 Better Retention</span>
-                                <span className="why-card-arrow">→</span>
-                            </div>
-                        </div>
-
-                        {/* Card 2 — Curated & Verified */}
-                        <div className="why-card why-card-green">
-                            <div className="why-card-glow why-glow-green"></div>
-                            <div className="why-card-top">
-                                <div className="why-icon-wrap why-icon-green">
-                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                                    </svg>
-                                </div>
-                                <div className="why-card-number">02</div>
-                            </div>
-                            <h4 className="why-card-title">Curated & Verified Books</h4>
-                            <p className="why-card-desc">Every book is faculty-vetted — academically reliable and perfectly aligned with your syllabus.</p>
-                            <div className="why-card-footer">
-                                <span className="why-card-tag why-tag-green">✅ 100% Reliable</span>
-                                <span className="why-card-arrow">→</span>
-                            </div>
-                        </div>
-
-                        {/* Card 3 — Peer Learning */}
-                        <div className="why-card why-card-amber">
-                            <div className="why-card-glow why-glow-amber"></div>
-                            <div className="why-card-top">
-                                <div className="why-icon-wrap why-icon-amber">
-                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                        <circle cx="9" cy="7" r="4" />
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                    </svg>
-                                </div>
-                                <div className="why-card-number">03</div>
-                            </div>
-                            <h4 className="why-card-title">Peer Learning & Collaboration</h4>
-                            <p className="why-card-desc">Study groups foster real-time discussion and collaborative problem-solving — skills critical for exams and career.</p>
-                            <div className="why-card-footer">
-                                <span className="why-card-tag why-tag-amber">🤝 Stronger Together</span>
-                                <span className="why-card-arrow">→</span>
-                            </div>
-                        </div>
-
-                        {/* Card 4 — No Ads */}
-                        <div className="why-card why-card-purple">
-                            <div className="why-card-glow why-glow-purple"></div>
-                            <div className="why-card-top">
-                                <div className="why-icon-wrap why-icon-purple">
-                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                        <line x1="8" y1="21" x2="16" y2="21" />
-                                        <line x1="12" y1="17" x2="12" y2="21" />
-                                    </svg>
-                                </div>
-                                <div className="why-card-number">04</div>
-                            </div>
-                            <h4 className="why-card-title">No Ads, Pop-ups or Paywalls</h4>
-                            <p className="why-card-desc">No ads, no paywalls, no login walls — complete and uninterrupted access to full content, free of charge.</p>
-                            <div className="why-card-footer">
-                                <span className="why-card-tag why-tag-purple">🚫 Zero Interruptions</span>
-                                <span className="why-card-arrow">→</span>
-                            </div>
-                        </div>
-
-                        {/* Card 5 — Expert Guidance */}
-                        <div className="why-card why-card-red">
-                            <div className="why-card-glow why-glow-red"></div>
-                            <div className="why-card-top">
-                                <div className="why-icon-wrap why-icon-red">
-                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                                    </svg>
-                                </div>
-                                <div className="why-card-number">05</div>
-                            </div>
-                            <h4 className="why-card-title">Expert Guidance On-Hand</h4>
-                            <p className="why-card-desc">Faculty and library staff are always nearby to guide you to the right book — something no search engine can replace.</p>
-                            <div className="why-card-footer">
-                                <span className="why-card-tag why-tag-red">👩‍🏫 Personalised Help</span>
-                                <span className="why-card-arrow">→</span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className="why-library-footer">
-                        <button className="btn btn-sm btn-browse" onClick={() => navigate('/books')}>Browse Collection →</button>
-                    </div>
-                </div>
-            </div>
-
             {/* ── Hero Banner ── */}
             <div className="hero-banner">
                 <div className="hero-content">
@@ -571,6 +450,127 @@ const Home = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Why Visit the Library? ── */}
+            <div className="why-library-section">
+                <div className="why-library-panel">
+                    <div className="why-library-header">
+                        <span className="why-library-badge">✨ IT Department Library</span>
+                        <h2 className="why-library-title">Why Visit the Library Instead of Reading Online?</h2>
+                        <p className="why-library-subtitle">Screens inform, but libraries transform.</p>
+                    </div>
+
+                    <div className="why-library-grid">
+
+                        {/* Card 1 — Deep Focus */}
+                        <div className="why-card why-card-blue">
+                            <div className="why-card-glow why-glow-blue"></div>
+                            <div className="why-card-top">
+                                <div className="why-icon-wrap why-icon-blue">
+                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 6v6l4 2" />
+                                    </svg>
+                                </div>
+                                <div className="why-card-number">01</div>
+                            </div>
+                            <h4 className="why-card-title">Deep Focus Environment</h4>
+                            <p className="why-card-desc">Quiet, distraction-free atmosphere that helps you focus and retain far more than browsing at home.</p>
+                            <div className="why-card-footer">
+                                <span className="why-card-tag why-tag-blue">🧠 Better Retention</span>
+                                <span className="why-card-arrow">→</span>
+                            </div>
+                        </div>
+
+                        {/* Card 2 — Curated & Verified */}
+                        <div className="why-card why-card-green">
+                            <div className="why-card-glow why-glow-green"></div>
+                            <div className="why-card-top">
+                                <div className="why-icon-wrap why-icon-green">
+                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                    </svg>
+                                </div>
+                                <div className="why-card-number">02</div>
+                            </div>
+                            <h4 className="why-card-title">Curated & Verified Books</h4>
+                            <p className="why-card-desc">Every book is faculty-vetted — academically reliable and perfectly aligned with your syllabus.</p>
+                            <div className="why-card-footer">
+                                <span className="why-card-tag why-tag-green">✅ 100% Reliable</span>
+                                <span className="why-card-arrow">→</span>
+                            </div>
+                        </div>
+
+                        {/* Card 3 — Peer Learning */}
+                        <div className="why-card why-card-amber">
+                            <div className="why-card-glow why-glow-amber"></div>
+                            <div className="why-card-top">
+                                <div className="why-icon-wrap why-icon-amber">
+                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                </div>
+                                <div className="why-card-number">03</div>
+                            </div>
+                            <h4 className="why-card-title">Peer Learning & Collaboration</h4>
+                            <p className="why-card-desc">Study groups foster real-time discussion and collaborative problem-solving — skills critical for exams and career.</p>
+                            <div className="why-card-footer">
+                                <span className="why-card-tag why-tag-amber">🤝 Stronger Together</span>
+                                <span className="why-card-arrow">→</span>
+                            </div>
+                        </div>
+
+                        {/* Card 4 — No Ads */}
+                        <div className="why-card why-card-purple">
+                            <div className="why-card-glow why-glow-purple"></div>
+                            <div className="why-card-top">
+                                <div className="why-icon-wrap why-icon-purple">
+                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" />
+                                        <line x1="8" y1="21" x2="16" y2="21" />
+                                        <line x1="12" y1="17" x2="12" y2="21" />
+                                    </svg>
+                                </div>
+                                <div className="why-card-number">04</div>
+                            </div>
+                            <h4 className="why-card-title">No Ads, Pop-ups or Paywalls</h4>
+                            <p className="why-card-desc">No ads, no paywalls, no login walls — complete and uninterrupted access to full content, free of charge.</p>
+                            <div className="why-card-footer">
+                                <span className="why-card-tag why-tag-purple">🚫 Zero Interruptions</span>
+                                <span className="why-card-arrow">→</span>
+                            </div>
+                        </div>
+
+                        {/* Card 5 — Expert Guidance */}
+                        <div className="why-card why-card-red">
+                            <div className="why-card-glow why-glow-red"></div>
+                            <div className="why-card-top">
+                                <div className="why-icon-wrap why-icon-red">
+                                    <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                                    </svg>
+                                </div>
+                                <div className="why-card-number">05</div>
+                            </div>
+                            <h4 className="why-card-title">Expert Guidance On-Hand</h4>
+                            <p className="why-card-desc">Faculty and library staff are always nearby to guide you to the right book — something no search engine can replace.</p>
+                            <div className="why-card-footer">
+                                <span className="why-card-tag why-tag-red">👩‍🏫 Personalised Help</span>
+                                <span className="why-card-arrow">→</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="why-library-footer">
+                        <button className="btn btn-sm btn-browse" onClick={() => navigate('/books')}>Browse Collection →</button>
                     </div>
                 </div>
             </div>

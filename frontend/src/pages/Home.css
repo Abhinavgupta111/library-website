@@ -1280,9 +1280,9 @@ body.dark-mode .why-tag-red {
         font-size: 0.82rem;
     }
 
-    /* ─ Why Visit Library: hide on mobile ─ */
+    /* ─ Why Visit Library: moved to bottom on mobile, show it ─ */
     .why-library-section {
-        display: none;
+        order: 99;   /* renders last — JSX move handles layout */
     }
 
     /* ─ Hero banner ─ */
@@ -1352,9 +1352,20 @@ body.dark-mode .why-tag-red {
     }
 
     .why-library-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: unset;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
         gap: 1rem;
         padding: 1.25rem 1rem;
+    }
+
+    .why-card {
+        scroll-snap-align: start;
+        min-width: 240px;
+        flex-shrink: 0;
     }
 }
 

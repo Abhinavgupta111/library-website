@@ -40,3 +40,10 @@ library-checkin-493717-9ec65f64326c.json
 backend/checkin_log.xlsx
 backend/booksData.json
 backend/response.json
+backend/.env
+backend/.env.*
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx

@@ -192,6 +192,26 @@
 .badge-in  { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
 .badge-out { background: rgba(100,116,139,0.12); color: var(--text-muted); border: 1px solid rgba(100,116,139,0.2); }
 
+/* Auto-checkout badge & row */
+.badge-auto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.4rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(245,158,11,0.13);
+    color: #fbbf24;
+    border: 1px solid rgba(245,158,11,0.3);
+    cursor: help;
+}
+.tr-auto-checkout {
+    background: rgba(245,158,11,0.04) !important;
+    border-left: 3px solid rgba(245,158,11,0.4);
+}
+
 .sessions-empty {
     display: flex;
     flex-direction: column;

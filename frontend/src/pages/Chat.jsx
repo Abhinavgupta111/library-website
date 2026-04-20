@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import './Chat.css';
 
-const ENDPOINT = 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 /* Avatar colour pool — deterministic by index */
 const AVATAR_GRADIENTS = [
@@ -19,22 +19,165 @@ const AVATAR_GRADIENTS = [
     'linear-gradient(135deg,#f87171,#dc2626)',
 ];
 
+/* ── Emoji categories ── */
+const EMOJI_CATEGORIES = [
+    {
+        label: '😊 Smileys', emojis: [
+            '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉',
+            '😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋',
+            '😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐',
+            '😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔',
+            '😪','🤤','😴','😷','🤒','🤕','🤢','🤧','🥵','🥶',
+            '😱','😨','😰','😥','😓','🤯','😤','😠','😡','🤬',
+            '😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽',
+        ]
+    },
+    {
+        label: '👍 Gestures', emojis: [
+            '👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞',
+            '🤟','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎',
+            '✊','👊','🤛','🤜','👏','🙌','🤲','🙏','✍️','💪',
+            '🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠',
+        ]
+    },
+    {
+        label: '❤️ Hearts', emojis: [
+            '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔',
+            '❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️',
+            '✝️','☯️','🕉️','✡️','🌈','🔥','⭐','🌟','💫','✨',
+        ]
+    },
+    {
+        label: '🎉 Party', emojis: [
+            '🎉','🎊','🎈','🎁','🎀','🪅','🎆','🎇','🧨','🪄',
+            '🏆','🥇','🥈','🥉','🎖️','🏅','🎗️','🎟️','🎫','🎪',
+            '🤹','🎭','🎨','🖼️','🎬','🎤','🎧','🎵','🎶','🎼',
+        ]
+    },
+    {
+        label: '🌍 Nature', emojis: [
+            '🌸','🌺','🌹','🌷','🌼','🌻','🌞','🌝','🌛','🌜',
+            '🌙','⭐','🌟','💫','✨','🌈','☁️','⛅','🌤️','🌥️',
+            '🌦️','🌧️','⛈️','🌩️','🌨️','❄️','🌪️','🌫️','🌊','🌋',
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
+        ]
+    },
+    {
+        label: '🍕 Food', emojis: [
+            '🍕','🍔','🍟','🌭','🌮','🌯','🥙','🥗','🍿','🧂',
+            '🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌽','🥦','🥕',
+            '🍎','🍊','🍋','🍇','🍓','🍑','🍒','🍌','🥝','🍉',
+            '☕','🍵','🧃','🥤','🍺','🍷','🥂','🍾','🎂','🍰',
+        ]
+    },
+];
+
+/* ─── Emoji Picker Component ─── */
+const EmojiPicker = ({ onSelect, onClose }) => {
+    const [activeTab, setActiveTab] = useState(0);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) onClose();
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [onClose]);
+
+    return (
+        <div className="ct-emoji-picker" ref={ref} role="dialog" aria-label="Emoji picker">
+            {/* Category tabs */}
+            <div className="ct-emoji-tabs">
+                {EMOJI_CATEGORIES.map((cat, i) => (
+                    <button
+                        key={i}
+                        className={`ct-emoji-tab${activeTab === i ? ' active' : ''}`}
+                        onClick={() => setActiveTab(i)}
+                        title={cat.label}
+                        type="button"
+                    >
+                        {cat.emojis[0]}
+                    </button>
+                ))}
+            </div>
+            {/* Label */}
+            <div className="ct-emoji-cat-label">{EMOJI_CATEGORIES[activeTab].label}</div>
+            {/* Grid */}
+            <div className="ct-emoji-grid">
+                {EMOJI_CATEGORIES[activeTab].emojis.map((em, i) => (
+                    <button
+                        key={i}
+                        className="ct-emoji-cell"
+                        onClick={() => onSelect(em)}
+                        type="button"
+                        aria-label={em}
+                    >
+                        {em}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+/* ─── File Preview bubble helper ─── */
+const FileBubble = ({ fileUrl }) => {
+    if (!fileUrl) return null;
+    const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${ENDPOINT}${fileUrl}`;
+    const ext = fullUrl.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+    const isVideo = ['mp4', 'webm', 'mov'].includes(ext);
+
+    if (isImage) {
+        return (
+            <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="ct-file-img-link">
+                <img src={fullUrl} alt="shared" className="ct-file-img" />
+            </a>
+        );
+    }
+    if (isVideo) {
+        return <video src={fullUrl} controls className="ct-file-video" />;
+    }
+    const filename = decodeURIComponent(fullUrl.split('/').pop().replace(/^\d+-/, ''));
+    return (
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="ct-file-attachment">
+            <span className="ct-file-icon">📎</span>
+            <span className="ct-file-name">{filename}</span>
+            <span className="ct-file-dl">↓</span>
+        </a>
+    );
+};
+
 const Chat = () => {
     const { userInfo } = useAuth();
-    
+
     // States
     const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [messages, setMessages] = useState([]);
-    
+
     const [loadingSidebar, setLoadingSidebar] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [sidebarError, setSidebarError] = useState(null);
-    
+
     const [inputValue, setInputValue] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Emoji picker
+    const [showEmoji, setShowEmoji] = useState(false);
+
+    // File upload
+    const [uploadingFile, setUploadingFile] = useState(false);
+    const [filePreview, setFilePreview] = useState(null); // { name, url (local blob), fileUrl (server) }
+    const fileInputRef = useRef(null);
+
+    // Delete context menu
+    const [ctxMenu, setCtxMenu] = useState(null); // { msgId, x, y }
+
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
+    const inputRef = useRef(null);
 
     const authConfig = userInfo?.token
         ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
@@ -45,18 +188,23 @@ const Chat = () => {
     // ─────────────────────────────────────────────
     useEffect(() => {
         if (!userInfo) return;
-        
+
         socketRef.current = io(ENDPOINT);
         socketRef.current.emit('setup', userInfo);
 
         socketRef.current.on('receive_message', (newMsg) => {
             setMessages((prev) => {
-                 // Append only if the message belongs to the currently active group view
-                 if (selectedGroup && newMsg.group_id === selectedGroup._id) {
-                     return [...prev, newMsg];
-                 }
-                 return prev;
+                if (selectedGroup && newMsg.group_id === selectedGroup._id) {
+                    return [...prev, newMsg];
+                }
+                return prev;
             });
+        });
+
+        socketRef.current.on('message_deleted', ({ messageId }) => {
+            setMessages((prev) =>
+                prev.map(m => m._id === messageId ? { ...m, deleted: true, message: '', fileUrl: undefined } : m)
+            );
         });
 
         return () => {
@@ -89,14 +237,14 @@ const Chat = () => {
     // ─────────────────────────────────────────────
     useEffect(() => {
         if (!selectedGroup || !userInfo) return;
-        
+
         const fetchMessages = async () => {
             setLoadingMessages(true);
             try {
                 const { data } = await axios.get(`${ENDPOINT}/api/chat/groups/${selectedGroup._id}/messages`, authConfig);
                 setMessages(data);
                 if (socketRef.current) {
-                    socketRef.current.emit('join_chat', selectedGroup._id); // join room
+                    socketRef.current.emit('join_chat', selectedGroup._id);
                 }
             } catch (error) {
                 console.error('Failed to fetch messages', error);
@@ -113,31 +261,105 @@ const Chat = () => {
     }, [messages, selectedGroup]);
 
     // ─────────────────────────────────────────────
-    // Handlers
+    // Emoji Handler
+    // ─────────────────────────────────────────────
+    const handleEmojiSelect = useCallback((emoji) => {
+        setInputValue(prev => prev + emoji);
+        setShowEmoji(false);
+        inputRef.current?.focus();
+    }, []);
+
+    // ─────────────────────────────────────────────
+    // File Upload Handler
+    // ─────────────────────────────────────────────
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Max 10 MB guard
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File is too large. Maximum size is 10 MB.');
+            e.target.value = '';
+            return;
+        }
+
+        const localUrl = URL.createObjectURL(file);
+        setFilePreview({ name: file.name, localUrl, fileUrl: null });
+        setUploadingFile(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const { data } = await axios.post(`${ENDPOINT}/api/chat/upload`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {})
+                }
+            });
+            setFilePreview(prev => ({ ...prev, fileUrl: data.url }));
+        } catch (err) {
+            console.error('File upload error:', err);
+            alert('Failed to upload file. Please try again.');
+            setFilePreview(null);
+        } finally {
+            setUploadingFile(false);
+            e.target.value = '';
+        }
+    };
+
+    const clearFilePreview = () => {
+        if (filePreview?.localUrl) URL.revokeObjectURL(filePreview.localUrl);
+        setFilePreview(null);
+    };
+
+    // ─────────────────────────────────────────────
+    // Send Handler
     // ─────────────────────────────────────────────
     const handleSend = (e) => {
         e.preventDefault();
-        if (!inputValue.trim() || !selectedGroup || !userInfo) return;
+        const hasText = inputValue.trim();
+        const hasFile = filePreview?.fileUrl;
+        if ((!hasText && !hasFile) || !selectedGroup || !userInfo) return;
+        if (uploadingFile) return; // still uploading
 
         const msgData = {
             sender_id: userInfo._id,
             group_id: selectedGroup._id,
-            message: inputValue
+            message: inputValue,
+            fileUrl: filePreview?.fileUrl || undefined,
         };
 
-        // Emit through socket
         socketRef.current.emit('send_message', msgData);
         setInputValue('');
+        clearFilePreview();
     };
 
+    // ─────────────────────────────────────────────
+    // Delete Message Handler
+    // ─────────────────────────────────────────────
+    const handleDeleteMessage = (msg) => {
+        if (!window.confirm('Delete this message for everyone?')) return;
+        socketRef.current.emit('delete_message', {
+            messageId: msg._id,
+            senderId: userInfo._id,
+            chatId: selectedGroup._id,
+        });
+        setCtxMenu(null);
+    };
+
+    // Close ctx menu on outside click
+    useEffect(() => {
+        if (!ctxMenu) return;
+        const close = () => setCtxMenu(null);
+        document.addEventListener('click', close);
+        return () => document.removeEventListener('click', close);
+    }, [ctxMenu]);
+
     const handleJoinGroup = async (group) => {
-        // Even if they haven't explicitly joined, we act as if they are joining the view.
-        // We could call the API to join the group to add them to members.
         try {
             await axios.post(`${ENDPOINT}/api/chat/groups/${group._id}/join`, {}, authConfig);
             setSelectedGroup(group);
         } catch (error) {
-            // Already a member or error, just set it active
             setSelectedGroup(group);
         }
     };
@@ -146,6 +368,8 @@ const Chat = () => {
     const filteredGroups = groups.filter(g =>
         g.group_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const canSend = (inputValue.trim() || filePreview?.fileUrl) && !uploadingFile;
 
     return (
         <div className="ct-container">
@@ -180,7 +404,6 @@ const Chat = () => {
 
                 <div className="ct-group-list">
                     {loadingSidebar ? (
-                        /* SKELETON SIDEBAR */
                         [...Array(6)].map((_, i) => (
                             <div key={i} className="ct-skeleton-item">
                                 <div className="ct-sk-avatar" />
@@ -240,6 +463,7 @@ const Chat = () => {
                             <span className="ct-chip">🔒 End-to-end encrypted</span>
                             <span className="ct-chip">⚡ Real-time messaging</span>
                             <span className="ct-chip">📎 File sharing</span>
+                            <span className="ct-chip">😊 Emoji reactions</span>
                         </div>
                     </div>
                 ) : (
@@ -274,7 +498,6 @@ const Chat = () => {
                             <div className="ct-day-separator"><span>Today</span></div>
 
                             {loadingMessages ? (
-                                /* SKELETON MESSAGES */
                                 [false, true, false, false, true].map((sent, i) => (
                                     <div key={i} className={`ct-skeleton-bubble ${sent ? 'sent' : ''}`}>
                                         <div className={`ct-sk-bubble ${sent ? 'sent' : ''}`} />
@@ -284,11 +507,16 @@ const Chat = () => {
                                 messages.map((msg) => {
                                     const isSent = msg.sender_id?._id === userInfo?._id;
                                     const timeStr = new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-                                    
+                                    const isDeleted = msg.deleted;
+
                                     return (
                                         <div
                                             key={msg._id}
                                             className={`ct-message-row${isSent ? ' sent' : ' received'}`}
+                                            onContextMenu={isSent && !isDeleted ? (e) => {
+                                                e.preventDefault();
+                                                setCtxMenu({ msg, x: e.clientX, y: e.clientY });
+                                            } : undefined}
                                         >
                                             {!isSent && (
                                                 <div
@@ -303,8 +531,19 @@ const Chat = () => {
                                                 {!isSent && (
                                                     <span className="ct-sender-name">{msg.sender_id?.name || 'Unknown User'}</span>
                                                 )}
-                                                <div className={`ct-bubble${isSent ? ' ct-bubble-sent' : ' ct-bubble-recv'}`}>
-                                                    <p className="ct-bubble-text">{msg.message}</p>
+                                                <div className={`ct-bubble${isSent ? ' ct-bubble-sent' : ' ct-bubble-recv'}${isDeleted ? ' ct-bubble-deleted' : ''}`}>
+                                                    {isDeleted ? (
+                                                        <p className="ct-bubble-text ct-deleted-text">🚫 This message was deleted</p>
+                                                    ) : (
+                                                        <>
+                                                            {/* File / Image content */}
+                                                            {msg.fileUrl && <FileBubble fileUrl={msg.fileUrl} />}
+                                                            {/* Text content */}
+                                                            {msg.message && (
+                                                                <p className="ct-bubble-text">{msg.message}</p>
+                                                            )}
+                                                        </>
+                                                    )}
                                                     <span className="ct-bubble-time">
                                                         {timeStr}
                                                         {isSent && (
@@ -323,26 +562,113 @@ const Chat = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
+                        {/* ── Delete context menu ── */}
+                        {ctxMenu && (
+                            <div
+                                className="ct-ctx-menu"
+                                style={{ top: ctxMenu.y, left: ctxMenu.x }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <button
+                                    className="ct-ctx-delete"
+                                    onClick={() => handleDeleteMessage(ctxMenu.msg)}
+                                >
+                                    🗑️ Delete for everyone
+                                </button>
+                            </div>
+                        )}
+
                         {/* Input Footer */}
                         <footer className="ct-footer">
-                            <form className="ct-input-form" onSubmit={handleSend} style={{width: '100%'}}>
-                                <input
-                                    className="ct-input"
-                                    type="text"
-                                    placeholder="Type a message…"
-                                    value={inputValue}
-                                    onChange={e => setInputValue(e.target.value)}
-                                    autoComplete="off"
+                            {/* Hidden file input */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                id="ct-file-input"
+                                className="ct-file-input-hidden"
+                                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                                onChange={handleFileChange}
+                            />
+
+                            {/* Emoji picker (floats above footer) */}
+                            {showEmoji && (
+                                <EmojiPicker
+                                    onSelect={handleEmojiSelect}
+                                    onClose={() => setShowEmoji(false)}
                                 />
+                            )}
+
+                            <form className="ct-input-form" onSubmit={handleSend} style={{ width: '100%' }}>
+                                {/* Attach button */}
+                                <button
+                                    type="button"
+                                    className="ct-action-btn"
+                                    title="Attach file"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    aria-label="Attach file"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                    </svg>
+                                </button>
+
+                                {/* Emoji button */}
+                                <button
+                                    type="button"
+                                    className={`ct-action-btn ct-emoji-trigger${showEmoji ? ' active' : ''}`}
+                                    title="Emoji"
+                                    onClick={() => setShowEmoji(v => !v)}
+                                    aria-label="Open emoji picker"
+                                    aria-expanded={showEmoji}
+                                >
+                                    😊
+                                </button>
+
+                                <div className="ct-input-wrap">
+                                    {/* File preview chip */}
+                                    {filePreview && (
+                                        <div className="ct-file-preview-chip">
+                                            {uploadingFile ? (
+                                                <span className="ct-upload-spinner" />
+                                            ) : (
+                                                <span className="ct-file-chip-icon">
+                                                    {['jpg','jpeg','png','gif','webp'].some(ext => filePreview.name.toLowerCase().endsWith(ext)) ? '🖼️' : '📎'}
+                                                </span>
+                                            )}
+                                            <span className="ct-file-chip-name">{filePreview.name}</span>
+                                            <button
+                                                type="button"
+                                                className="ct-file-chip-remove"
+                                                onClick={clearFilePreview}
+                                                aria-label="Remove file"
+                                            >✕</button>
+                                        </div>
+                                    )}
+
+                                    <input
+                                        ref={inputRef}
+                                        className="ct-input"
+                                        type="text"
+                                        placeholder={filePreview ? 'Add a caption…' : 'Type a message…'}
+                                        value={inputValue}
+                                        onChange={e => setInputValue(e.target.value)}
+                                        autoComplete="off"
+                                    />
+                                </div>
+
                                 <button
                                     className="ct-send-btn"
                                     type="submit"
-                                    disabled={!inputValue.trim()}
+                                    disabled={!canSend}
                                     title="Send"
                                 >
-                                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                                    </svg>
+                                    {uploadingFile ? (
+                                        <span className="ct-upload-spinner" style={{ width: 16, height: 16 }} />
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                                        </svg>
+                                    )}
                                 </button>
                             </form>
                         </footer>

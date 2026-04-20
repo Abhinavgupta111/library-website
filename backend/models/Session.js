@@ -29,6 +29,10 @@ const sessionSchema = new mongoose.Schema({
     type: String,
     enum: ['IN', 'OUT'],
     default: 'IN'
+  },
+  autoCheckout: {
+    type: Boolean,
+    default: false   // true when the system auto-closed the session after 12 h
   }
 }, {
   timestamps: true

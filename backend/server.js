@@ -14,11 +14,26 @@ import sessionRoutes from './routes/sessions.js';
 import Message from './models/Message.js';
 import multer from 'multer';
 import path from 'path';
+import { startAutoCheckoutJob } from './utils/autoCheckout.js';
+import {
+  helmetMiddleware,
+  corsMiddleware,
+  globalRateLimiter,
+  authRateLimiter,
+  mongoSanitiser,
+  hppGuard,
+  xssSanitiser,
+  requestId,
+  securityLogger,
+} from './middleware/security.js';
 
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
+
+// Start the 12-hour auto-checkout background job
+startAutoCheckoutJob();
 
 const app = express();
 const server = http.createServer(app);
@@ -32,8 +47,21 @@ const io = new Server(server, {
 // Register io singleton so controllers can emit events
 setIO(io);
 
-app.use(cors());
-app.use(express.json());
+app.use(requestId);          // Attach X-Request-Id to every response
+app.use(helmetMiddleware);   // HTTP security headers
+app.use(corsMiddleware);     // Strict CORS whitelist
+app.use(globalRateLimiter);  // 300 req / 15 min per IP
+app.use(express.json({ limit: '10kb' }));   // Body size cap — prevents large payload DoS
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+app.use(mongoSanitiser);     // Strip MongoDB operators from user input
+app.use(xssSanitiser);       // Strip HTML tags from string fields
+app.use(hppGuard);           // Remove duplicate query params
+app.use(securityLogger);     // Log suspicious patterns
+
+// Apply strict rate limiter to authentication routes
+app.use('/api/auth/login',    authRateLimiter);
+app.use('/api/auth/register', authRateLimiter);
+app.use('/api/auth/forgot-password', authRateLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
@@ -164,6 +192,25 @@ io.on('connection', (socket) => {
       }
     } catch (error) {
       console.error('Error handling reaction:', error);
+    }
+  });
+
+  socket.on('delete_message', async ({ messageId, senderId, chatId }) => {
+    try {
+      const message = await Message.findById(messageId);
+      if (!message) return;
+      // Only the original sender can delete
+      if (message.sender_id.toString() !== senderId.toString()) return;
+
+      message.message = '';
+      message.fileUrl = undefined;
+      message.deleted = true;
+      await message.save();
+
+      // Broadcast to everyone in the room that the message was deleted
+      io.to(chatId).emit('message_deleted', { messageId });
+    } catch (error) {
+      console.error('Error deleting message:', error);
     }
   });
 

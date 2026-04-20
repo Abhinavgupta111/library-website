@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './Settings.css';
 
-const ENDPOINT = 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Settings = () => {
-    const { userInfo, login } = useAuth(); // login function updates the Context and localStorage
+    const { userInfo, login, logout } = useAuth();
+    const navigate = useNavigate();
     
     // Form fields
     const [name, setName] = useState('');
@@ -181,6 +183,13 @@ const Settings = () => {
                     </div>
 
                     <div className="settings-actions">
+                        <button
+                            type="button"
+                            className="settings-btn-logout"
+                            onClick={() => { logout(); navigate('/login'); }}
+                        >
+                            🚪 Logout
+                        </button>
                         <button type="submit" className="settings-btn-save" disabled={loading}>
                             {loading ? 'Saving...' : 'Save Changes'}
                         </button>

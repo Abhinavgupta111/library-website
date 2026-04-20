@@ -2,20 +2,24 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  name: { type: String, required: true, trim: true, maxlength: 100 },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { 
     type: String, 
     required: true,
     minlength: 8
   },
   role: { type: String, enum: ['Student', 'Admin', 'Librarian'], default: 'Student' },
-  branch: { type: String },
-  year: { type: Number },
-  roll_number: { type: String },
+  branch: { type: String, maxlength: 100 },
+  year: { type: Number, min: 1, max: 6 },
+  roll_number: { type: String, maxlength: 50 },
   pinnedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
   resetPasswordToken:  { type: String },
   resetPasswordExpire: { type: Date },
+  // ── Brute-force / lockout fields ──
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil:    { type: Date },
+  lastLogin:    { type: Date },
 }, {
   timestamps: true
 });

@@ -28,7 +28,7 @@ const TopHeader = () => {
     }, []);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/events')
+        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/events`)
             .then(res => {
                 const mapped = res.data.slice(0, 3).map(e => ({
                     icon: '📅',

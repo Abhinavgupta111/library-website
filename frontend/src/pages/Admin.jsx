@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import './Admin.css';
 
-const ENDPOINT = 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Admin = () => {
     const { userInfo } = useAuth();
@@ -315,14 +315,14 @@ const Admin = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {sessions.map(s => {
+                                                {sessions.map(s => {
                                             const entry = new Date(s.entryTime);
                                             const exit = s.exitTime ? new Date(s.exitTime) : null;
                                             const diffMs = exit ? exit - entry : Date.now() - entry;
                                             const diffMins = Math.floor(diffMs / 60000);
                                             const dur = diffMins < 60 ? `${diffMins}m` : `${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
                                             return (
-                                                <tr key={s._id}>
+                                                <tr key={s._id} className={s.autoCheckout ? 'tr-auto-checkout' : ''}>
                                                     <td className="td-name">{s.name}</td>
                                                     <td className="td-purpose">{s.purpose || '—'}</td>
                                                     <td className="td-books">
@@ -337,6 +337,11 @@ const Admin = () => {
                                                         <span className={`session-badge ${s.status === 'IN' ? 'badge-in' : 'badge-out'}`}>
                                                             {s.status === 'IN' ? '🟢 IN' : '🔴 OUT'}
                                                         </span>
+                                                        {s.autoCheckout && (
+                                                            <span className="badge-auto" title="Automatically checked out after 12 hours">
+                                                                ⚙️ Auto
+                                                            </span>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             );

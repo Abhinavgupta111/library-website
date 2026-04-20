@@ -15,7 +15,8 @@ const messageSchema = new mongoose.Schema({
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       emoji: { type: String }
     }
-  ]
+  ],
+  deleted: { type: Boolean, default: false }
 }, {
   timestamps: true
 });

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './Library.css';
 
-const ENDPOINT = 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const PAGE_SIZE = 20;
 
 const CATEGORY_COLORS = {
@@ -236,7 +236,13 @@ const Library = () => {
                         {book.publishedYear > 0 && (
                           <span className="meta-item">
                             <span className="meta-label">Year</span>
-                            <span className="meta-value">{book.publishedYear}{book.pages > 0 ? ` · ${book.pages}p` : ''}</span>
+                            <span className="meta-value">{book.publishedYear}</span>
+                          </span>
+                        )}
+                        {book.pages > 0 && (
+                          <span className="meta-item">
+                            <span className="meta-label">Pages</span>
+                            <span className="meta-value">{book.pages} pages</span>
                           </span>
                         )}
                         {book.shelf_location?.block && (

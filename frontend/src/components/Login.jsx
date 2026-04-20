@@ -23,7 +23,7 @@ const Login = () => {
 
         try {
             const config = { headers: { 'Content-Type': 'application/json' } };
-            const { data } = await axios.post('http://localhost:5000/api/auth/login', { email, password }, config);
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, { email, password }, config);
             login(data);
             navigate('/');
         } catch (err) {

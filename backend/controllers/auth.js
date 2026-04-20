@@ -3,10 +3,10 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 
-// Generate JWT token
+// Generate JWT token — short-lived (7 days)
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-    expiresIn: '30d',
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '7d',
   });
 };
 
@@ -72,31 +72,59 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if(!email || !password) {
-        return res.status(400).json({ message: 'Please provide email and password' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // Find the user by email
-    const user = await User.findOne({ email });
+    // Normalise email
+    const normEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normEmail });
 
-    // Verify user exists AND password is correct
-    if (user && (await user.matchPassword(password))) {
-      res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        branch: user.branch,
-        year: user.year,
-        roll_number: user.roll_number,
-        token: generateToken(user._id),
+    // ── Account lockout check ───────────────────────────────────────
+    const MAX_ATTEMPTS  = 5;
+    const LOCK_DURATION = 30 * 60 * 1000; // 30 minutes
+
+    if (user && user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(423).json({
+        message: `Account temporarily locked due to too many failed login attempts. Try again in ${minutesLeft} minute(s).`,
       });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    const passwordOk = user && (await user.matchPassword(password));
+
+    if (!passwordOk) {
+      if (user) {
+        user.loginAttempts += 1;
+        if (user.loginAttempts >= MAX_ATTEMPTS) {
+          user.lockUntil = new Date(Date.now() + LOCK_DURATION);
+          console.warn(`[Security] Account locked: ${normEmail} after ${user.loginAttempts} failed attempts.`);
+        }
+        await user.save({ validateBeforeSave: false });
+      }
+      // Generic message — don't reveal whether the email exists
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // ── Success — reset lockout counters ────────────────────────────
+    user.loginAttempts = 0;
+    user.lockUntil     = undefined;
+    user.lastLogin     = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      _id:         user._id,
+      name:        user.name,
+      email:       user.email,
+      role:        user.role,
+      branch:      user.branch,
+      year:        user.year,
+      roll_number: user.roll_number,
+      token:       generateToken(user._id),
+    });
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: 'Server error during login.', error: error.message });
+    console.error('Login Error:', error);
+    res.status(500).json({ message: 'Server error during login.' });
   }
 };
 
