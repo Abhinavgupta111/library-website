@@ -7,11 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true,
-    minlength: 8,
-    validate: {
-      validator: (v) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v),
-      message: 'Password must include uppercase, lowercase, numbers, and special characters.'
-    }
+    minlength: 8
   },
   role: { type: String, enum: ['Student', 'Admin', 'Librarian'], default: 'Student' },
   branch: { type: String },

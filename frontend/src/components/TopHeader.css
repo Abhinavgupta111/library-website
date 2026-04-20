@@ -255,11 +255,41 @@
 /* ═══════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .header-search {
+        max-width: 220px;
+    }
+}
+
 @media (max-width: 640px) {
     .header-search {
-        max-width: 200px;
+        max-width: 150px;
     }
     .top-header {
-        padding: 0 1rem;
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+    }
+    .search-input {
+        padding-left: 2rem;
+        font-size: 0.8rem;
+    }
+    .search-icon {
+        left: 0.6rem;
+    }
+    .icon-btn, .sidebar-toggle-btn {
+        width: 34px;
+        height: 34px;
+    }
+    .hero-banner {
+        padding: 1.5rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-search {
+        max-width: 120px;
+    }
+    .search-input::placeholder {
+        color: transparent; /* hide placeholder to save space */
     }
 }

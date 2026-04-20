@@ -10,7 +10,8 @@ export const ThemeProvider = ({ children }) => {
 
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
-        return saved === 'true';
+        if (saved !== null) return saved === 'true';
+        return typeof window !== 'undefined' && window.innerWidth <= 768;
     });
 
     useEffect(() => {

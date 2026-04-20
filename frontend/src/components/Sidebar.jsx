@@ -53,7 +53,7 @@ const Sidebar = () => {
             </div>
 
             <div className="sidebar-profile">
-                <div className="profile-info">
+                <div className="profile-info" onClick={() => navigate('/settings')}>
                     <div className="profile-avatar">
                         {userInfo.name.charAt(0)}
                     </div>

@@ -153,7 +153,7 @@ const Chat = () => {
             {/* ══════════════════
                 LEFT SIDEBAR
                 ══════════════════ */}
-            <aside className="ct-sidebar">
+            <aside className={`ct-sidebar ${selectedGroup ? 'mobile-hidden' : ''}`}>
                 <div className="ct-sidebar-header">
                     <div className="ct-sidebar-title-row">
                         <span className="ct-sidebar-icon">💬</span>
@@ -230,7 +230,7 @@ const Chat = () => {
             {/* ══════════════════
                 RIGHT CHAT AREA
                 ══════════════════ */}
-            <main className="ct-main">
+            <main className={`ct-main ${!selectedGroup ? 'mobile-hidden' : ''}`}>
                 {selectedGroup === null ? (
                     <div className="ct-empty-state">
                         <div className="ct-empty-icon">💬</div>
@@ -247,6 +247,15 @@ const Chat = () => {
                         {/* Chat Header */}
                         <header className="ct-chat-header">
                             <div className="ct-chat-header-left">
+                                <button
+                                    className="ct-back-btn mobile-only"
+                                    onClick={() => setSelectedGroup(null)}
+                                    aria-label="Back to chat list"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
                                 <div
                                     className="ct-avatar ct-avatar-md"
                                     style={{ background: AVATAR_GRADIENTS[groups.findIndex(g => g._id === selectedGroup._id) % AVATAR_GRADIENTS.length] || AVATAR_GRADIENTS[0] }}

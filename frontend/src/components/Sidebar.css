@@ -4,6 +4,7 @@
 .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
+    height: 100dvh;
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-light);
     display: flex;
@@ -11,6 +12,7 @@
     position: fixed;
     top: 0;
     left: 0;
+    bottom: 0;
     z-index: 100;
     transition:
         width var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1),
@@ -171,7 +173,7 @@
 
 /* ── Profile ── */
 .sidebar-profile {
-    padding: 1rem 1rem;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) 1rem;
     border-top: 1px solid var(--border-light);
     display: flex;
     align-items: center;
@@ -194,6 +196,13 @@
     gap: 0.75rem;
     overflow: hidden;
     min-width: 0;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: opacity var(--transition-base);
+}
+
+.profile-info:hover {
+    opacity: 0.8;
 }
 
 .profile-avatar {
@@ -276,4 +285,21 @@
 .sidebar-nav::-webkit-scrollbar-thumb {
     background: var(--border-light);
     border-radius: 10px;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE SIDEBAR
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 100;
+        width: 260px !important;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+    }
+    
+    /* When sidebar is actually open on mobile (mapped to !isSidebarCollapsed in JSX) */
+    .sidebar-is-open .sidebar {
+        transform: translateX(0);
+    }
 }
