@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import https from 'https';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 
@@ -223,6 +224,29 @@ function createTransporter() {
   });
 }
 
+async function sendPasswordResetEmail(user, resetUrl) {
+  const mailOptions = {
+    from: `"MAIT Library" <${process.env.EMAIL_USER}>`,
+    to: user.email,
+    subject: '🔐 Password Reset Request — MAIT Library',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h2 style="color: #4f6ef7; margin-bottom: 8px;">MAIT Library — Password Reset</h2>
+        <p style="color: #4a5568;">Hello <strong>${user.name}</strong>,</p>
+        <p style="color: #4a5568;">We received a request to reset your password. Click the button below to create a new password. This link is valid for <strong>1 hour</strong>.</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetUrl}" style="background: #4f6ef7; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Reset My Password</a>
+        </div>
+        <p style="color: #718096; font-size: 13px;">If you did not request this, you can safely ignore this email. Your password will not change.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+        <p style="color: #a0aec0; font-size: 12px; text-align: center;">MAIT Library System · IT Department</p>
+      </div>
+    `,
+  };
+
+  await createTransporter().sendMail(mailOptions);
+}
+
 // @desc    Send password reset link to registered email
 // @route   POST /api/auth/forgot-password
 // @access  Public
@@ -233,8 +257,7 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      // Don't reveal whether the email exists — security best practice
-      return res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
+      return res.status(404).json({ message: 'No account found with that email address.' });
     }
 
     // Generate secure random token
@@ -248,26 +271,8 @@ export const forgotPassword = async (req, res) => {
     // Build reset URL (frontend route)
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${rawToken}`;
 
-    const mailOptions = {
-      from: `"MAIT Library" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: '🔐 Password Reset Request — MAIT Library',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-          <h2 style="color: #4f6ef7; margin-bottom: 8px;">MAIT Library — Password Reset</h2>
-          <p style="color: #4a5568;">Hello <strong>${user.name}</strong>,</p>
-          <p style="color: #4a5568;">We received a request to reset your password. Click the button below to create a new password. This link is valid for <strong>1 hour</strong>.</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetUrl}" style="background: #4f6ef7; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Reset My Password</a>
-          </div>
-          <p style="color: #718096; font-size: 13px;">If you did not request this, you can safely ignore this email. Your password will not change.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-          <p style="color: #a0aec0; font-size: 12px; text-align: center;">MAIT Library System · IT Department</p>
-        </div>
-      `,
-    };
+    await sendPasswordResetEmail(user, resetUrl);
 
-    await createTransporter().sendMail(mailOptions);
     res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
 
   } catch (error) {
@@ -281,7 +286,10 @@ export const forgotPassword = async (req, res) => {
         await user.save({ validateBeforeSave: false });
       }
     } catch (_) {}
-    res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Failed to send email. Please try again later.'
+      : `Failed to send email. ${error.message}`;
+    res.status(500).json({ message });
   }
 };
 
