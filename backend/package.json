@@ -27,10 +27,10 @@
     "nodemailer": "^8.0.5",
     "sanitize-html": "^2.17.3",
     "socket.io": "^4.8.3",
-    "xss-clean": "^0.1.4"
+    "xss-clean": "^0.1.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "xlsx": "^0.18.5"
+    "nodemon": "^3.1.14"
   }
 }
