@@ -18,10 +18,17 @@ const CREDS_PATH = path.join(__dirname, '..', 'google-credentials.json');
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function getSheets() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: CREDS_PATH,
+  const authConfig = {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
+  };
+
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    authConfig.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+  } else {
+    authConfig.keyFile = CREDS_PATH;
+  }
+
+  const auth = new google.auth.GoogleAuth(authConfig);
   return google.sheets({ version: 'v4', auth });
 }
 
