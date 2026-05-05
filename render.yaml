@@ -19,4 +19,4 @@ services:
       - key: EMAIL_PASS
         sync: false
       - key: FRONTEND_URL
-        value: https://mait-it-library.vercel.app
+        value: https://library-website-hazel.vercel.app
