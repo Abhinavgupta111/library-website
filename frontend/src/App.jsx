@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/DashboardLayout';
 import Home from './pages/Home';
 import Login from './components/Login';
@@ -10,11 +10,12 @@ import Events from './pages/Events';
 import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
 const AppRoutes = () => {
+    const { userInfo } = useAuth();
     const location = useLocation();
     const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname)
         || location.pathname.startsWith('/reset-password');
@@ -28,6 +29,11 @@ const AppRoutes = () => {
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Routes>
         );
+    }
+
+    // Redirect unauthenticated users to login
+    if (!userInfo) {
+        return <Navigate to="/login" replace />;
     }
 
     const isChatPage = location.pathname === '/chat';
