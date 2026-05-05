@@ -22,7 +22,10 @@ function getSheets() {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   };
 
-  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+    const decoded = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf8');
+    authConfig.credentials = JSON.parse(decoded);
+  } else if (process.env.GOOGLE_CREDENTIALS_JSON) {
     authConfig.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
   } else {
     authConfig.keyFile = CREDS_PATH;
