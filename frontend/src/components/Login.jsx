@@ -8,6 +8,7 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [unverified, setUnverified] = useState(false); // special unverified-email state
 
     const navigate = useNavigate();
     const { login } = useAuth();
@@ -15,6 +16,7 @@ const Login = () => {
     const submitHandler = async (e) => {
         e.preventDefault();
         setError('');
+        setUnverified(false);
 
         if (!email || !password) {
             setError('Please enter both email and password.');
@@ -27,7 +29,11 @@ const Login = () => {
             login(data);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Login failed — is the server running?');
+            if (err.response?.data?.requiresVerification) {
+                setUnverified(true);
+            } else {
+                setError(err.response?.data?.message || err.message || 'Login failed — is the server running?');
+            }
         }
     };
 
@@ -47,7 +53,22 @@ const Login = () => {
                     <p>Login to the IT Department Library</p>
                 </div>
 
-                {/* Error */}
+                {/* Unverified email banner */}
+                {unverified && (
+                    <div className="auth-alert auth-alert-danger" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span className="auth-alert-icon">📧</span>
+                            <span>Your email is not verified yet. Please check your inbox and click the verification link.</span>
+                        </div>
+                        <div style={{ textAlign: 'center', marginTop: '0.25rem' }}>
+                            <Link to="/signup" style={{ color: '#60a5fa', fontSize: '0.82rem', fontWeight: 600 }}>
+                                Didn't get the email? Register again →
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {/* Generic error */}
                 {error && (
                     <div className="auth-alert auth-alert-danger">
                         <span className="auth-alert-icon">⚠️</span>

@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
   year: { type: Number, min: 1, max: 6 },
   roll_number: { type: String, maxlength: 50 },
   pinnedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
+  // ── Email verification ──
+  isVerified:        { type: Boolean, default: false },
+  emailVerifyToken:  { type: String },
+  emailVerifyExpire: { type: Date },
+  // ── Password reset ──
   resetPasswordToken:  { type: String },
   resetPasswordExpire: { type: Date },
   // ── Brute-force / lockout fields ──

@@ -30,35 +30,67 @@ export const registerUser = async (req, res) => {
     }
 
     const userExists = await User.findOne({ email });
-
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    // Generate a secure email verification token
+    const rawToken    = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
     const user = await User.create({
       name,
       email,
-      password, // Password hashing is handled by the Mongoose pre-save hook in User.js
+      password,
       role: role || 'Student',
       branch,
       year,
       roll_number,
+      isVerified:        false,
+      emailVerifyToken:  hashedToken,
+      emailVerifyExpire: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
     });
 
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        branch: user.branch,
-        year: user.year,
-        roll_number: user.roll_number,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data received. Could not create account.' });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid user data received. Could not create account.' });
     }
+
+    // Build the verify URL (frontend route)
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${rawToken}`;
+
+    const mailOptions = {
+      from: `"MAIT Library" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: '✅ Verify your MAIT Library account',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #4f6ef7; margin-bottom: 8px;">Welcome to MAIT Library, ${user.name}! 📚</h2>
+          <p style="color: #4a5568;">Thanks for signing up. Please verify your email address to activate your account.</p>
+          <p style="color: #4a5568;">This link is valid for <strong>24 hours</strong>.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${verifyUrl}" style="background: #4f6ef7; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Verify My Email →</a>
+          </div>
+          <p style="color: #718096; font-size: 13px;">If you did not create this account, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+          <p style="color: #a0aec0; font-size: 12px; text-align: center;">MAIT Library System · IT Department</p>
+        </div>
+      `,
+    };
+
+    try {
+      await createTransporter().sendMail(mailOptions);
+    } catch (mailErr) {
+      // If email fails, remove the unverified account and tell the user
+      console.error('Verification email failed:', mailErr);
+      await User.findByIdAndDelete(user._id);
+      return res.status(500).json({ message: 'Could not send verification email. Please check your email address and try again.' });
+    }
+
+    res.status(201).json({
+      message: 'Account created! A verification link has been sent to your email. Please check your inbox (and spam folder) to activate your account.',
+      requiresVerification: true,
+    });
+
   } catch (error) {
     console.error("Register Error:", error);
     res.status(500).json({ message: 'Server error during registration.', error: error.message });
@@ -104,6 +136,14 @@ export const loginUser = async (req, res) => {
       }
       // Generic message — don't reveal whether the email exists
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // ── Block unverified accounts ────────────────────────────────────
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+        requiresVerification: true,
+      });
     }
 
     // ── Success — reset lockout counters ────────────────────────────
@@ -282,6 +322,36 @@ export const forgotPassword = async (req, res) => {
       }
     } catch (_) {}
     res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+  }
+};
+
+// @desc    Verify a user's email address via token link
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) return res.status(400).json({ message: 'Verification token is missing.' });
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      emailVerifyToken:  hashedToken,
+      emailVerifyExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Verification link is invalid or has expired. Please register again.' });
+    }
+
+    user.isVerified        = true;
+    user.emailVerifyToken  = undefined;
+    user.emailVerifyExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({ message: 'Email verified successfully! You can now log in.' });
+  } catch (error) {
+    console.error('Email Verification Error:', error);
+    res.status(500).json({ message: 'Server error during email verification.' });
   }
 };
 

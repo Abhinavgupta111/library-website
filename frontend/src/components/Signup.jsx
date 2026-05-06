@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
 import './Auth.css';
 
 const Signup = () => {
@@ -11,9 +10,10 @@ const Signup = () => {
     const [branch,   setBranch]   = useState('IT');
     const [year,     setYear]     = useState(1);
     const [error,    setError]    = useState('');
+    const [loading,  setLoading]  = useState(false);
+    const [sent,     setSent]     = useState(false); // true after verification email sent
 
     const navigate = useNavigate();
-    const { login } = useAuth();
 
     const submitHandler = async (e) => {
         e.preventDefault();
@@ -30,19 +30,45 @@ const Signup = () => {
             return;
         }
 
+        setLoading(true);
         try {
             const config = { headers: { 'Content-Type': 'application/json' } };
-            const { data } = await axios.post(
+            await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`,
                 { name, email, password, branch, year: Number(year) },
                 config
             );
-            login(data);
-            navigate('/');
+            setSent(true); // Show the "check your email" screen
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Registration failed — is the server running?');
+        } finally {
+            setLoading(false);
         }
     };
+
+    // ── Email-sent confirmation screen ─────────────────────────────────────────
+    if (sent) {
+        return (
+            <div className="auth-page">
+                <div className="auth-card" style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📬</div>
+                    <h1 style={{ color: '#f8fafc', fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                        Check your inbox!
+                    </h1>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                        We sent a verification link to <strong style={{ color: '#60a5fa' }}>{email}</strong>.<br />
+                        Click the link to activate your account. It expires in 24 hours.
+                    </p>
+                    <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
+                        Didn't receive it? Check your spam folder.
+                    </p>
+                    <Link to="/login" className="auth-submit-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
+                        ← Back to Login
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="auth-page">
@@ -158,8 +184,8 @@ const Signup = () => {
                     </div>
 
                     {/* Submit */}
-                    <button type="submit" className="auth-submit-btn">
-                        Create Account →
+                    <button type="submit" className="auth-submit-btn" disabled={loading}>
+                        {loading ? 'Creating account…' : 'Create Account →'}
                     </button>
                 </form>
 

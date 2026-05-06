@@ -5,6 +5,7 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import VerifyEmail from './components/VerifyEmail';
 import Library from './pages/Library';
 import Events from './pages/Events';
 import Chat from './pages/Chat';
@@ -18,7 +19,8 @@ const AppRoutes = () => {
     const { userInfo, isLoading } = useAuth();
     const location = useLocation();
     const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname)
-        || location.pathname.startsWith('/reset-password');
+        || location.pathname.startsWith('/reset-password')
+        || location.pathname.startsWith('/verify-email');
 
     if (isAuthPage) {
         return (
@@ -27,6 +29,7 @@ const AppRoutes = () => {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/verify-email/:token" element={<VerifyEmail />} />
             </Routes>
         );
     }
