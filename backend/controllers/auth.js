@@ -253,16 +253,29 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// ── Nodemailer transporter (Gmail App Password) ─────────────────────────────
+// ── Nodemailer transporter (Gmail SMTP — explicit settings) ──────────────────
 function createTransporter() {
+  // Pre-flight check — log if creds are missing so we can see it in Render logs
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error('[Email] EMAIL_USER or EMAIL_PASS env var is missing!');
+  } else {
+    console.log(`[Email] Transporter ready for ${process.env.EMAIL_USER}`);
+  }
+
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,          // use STARTTLS (not SSL)
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,  // Gmail App Password (not your normal password)
+      pass: process.env.EMAIL_PASS,  // 16-char Gmail App Password (requires 2FA on the account)
     },
-    connectionTimeout: 10000,  // 10 s to connect
-    socketTimeout:     10000,  // 10 s idle socket
+    tls: {
+      rejectUnauthorized: true,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout:   8000,
+    socketTimeout:     10000,
   });
 }
 
@@ -324,7 +337,11 @@ export const forgotPassword = async (req, res) => {
     res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
 
   } catch (error) {
-    console.error('Forgot Password Error:', error);
+    // Log the full error so we can diagnose it in Render logs
+    console.error('[ForgotPassword] Email send failed:');
+    console.error('  Message :', error.message);
+    console.error('  Code    :', error.code);
+    console.error('  Response:', error.response);
     // Clean up token if mail failed
     try {
       const user = await User.findOne({ email: req.body.email });
@@ -334,7 +351,10 @@ export const forgotPassword = async (req, res) => {
         await user.save({ validateBeforeSave: false });
       }
     } catch (_) {}
-    res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+    const clientMsg = error.message === 'EMAIL_TIMEOUT'
+      ? 'Email server took too long to respond. Please try again.'
+      : 'Failed to send email. Please try again later.';
+    res.status(500).json({ message: clientMsg });
   }
 };
 
