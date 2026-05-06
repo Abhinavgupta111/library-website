@@ -55,8 +55,8 @@ const ALLOWED_ORIGINS = [
 
 export const corsMiddleware = cors({
   origin(origin, cb) {
-    // Allow requests with no Origin header (Render health checks, Socket.io, Postman, server-to-server)
-    if (!origin) return cb(null, true);
+    // Allow requests with no Origin header, or literal 'undefined'/'null' strings (Render health checks, etc)
+    if (!origin || origin === 'undefined' || origin === 'null') return cb(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error(`CORS: origin ${origin} not allowed`));
   },
@@ -75,7 +75,7 @@ export const globalRateLimiter = rateLimit({
   legacyHeaders:    false,
   message:          { message: 'Too many requests, please try again after 15 minutes.' },
   skip: (req) => req.path === '/api/health',
-  validate: { xForwardedForHeader: false },  // suppress Render proxy header error
+  validate: false,  // suppress all Render proxy header errors
 });
 
 // ─── 3b. Auth route rate limiter (strict) ─────────────────────────────────────
@@ -85,7 +85,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders:   false,
   message: { message: 'Too many authentication attempts. Please wait 15 minutes.' },
-  validate: { xForwardedForHeader: false },  // suppress Render proxy header error
+  validate: false,  // suppress all Render proxy header errors
 });
 
 // ─── 4. MongoDB sanitiser — prevent NoSQL injection ───────────────────────────
