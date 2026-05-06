@@ -26,6 +26,7 @@ function isTokenExpired(token) {
 
 export const AuthProvider = ({ children }) => {
     const [userInfo, setUserInfo] = useState(null);
+    const [isLoading, setIsLoading] = useState(true); // true until localStorage check is done
 
     // ── Secure logout ─────────────────────────────────────────────────────────
     const logout = useCallback(() => {
@@ -37,13 +38,17 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         try {
             const stored = localStorage.getItem('userInfo');
-            if (!stored) return;
+            if (!stored) {
+                setIsLoading(false);
+                return;
+            }
 
             const parsed = JSON.parse(stored);
 
             // Basic structural sanity check
             if (!parsed || !parsed.token || !parsed._id || !parsed.email) {
                 localStorage.removeItem('userInfo');
+                setIsLoading(false);
                 return;
             }
 
@@ -51,12 +56,15 @@ export const AuthProvider = ({ children }) => {
             if (isTokenExpired(parsed.token)) {
                 console.warn('[AuthContext] Token expired — clearing session.');
                 localStorage.removeItem('userInfo');
+                setIsLoading(false);
                 return;
             }
 
             setUserInfo(parsed);
         } catch {
             localStorage.removeItem('userInfo');
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -115,7 +123,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ userInfo, login, logout }}>
+        <AuthContext.Provider value={{ userInfo, isLoading, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

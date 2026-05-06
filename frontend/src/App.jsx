@@ -15,7 +15,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
 const AppRoutes = () => {
-    const { userInfo } = useAuth();
+    const { userInfo, isLoading } = useAuth();
     const location = useLocation();
     const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(location.pathname)
         || location.pathname.startsWith('/reset-password');
@@ -28,6 +28,26 @@ const AppRoutes = () => {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Routes>
+        );
+    }
+
+    // Wait for localStorage session check before deciding to redirect
+    if (isLoading) {
+        return (
+            <div style={{
+                width: '100%', minHeight: '100vh', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                background: 'var(--bg-color)', color: 'var(--text-muted)',
+                flexDirection: 'column', gap: '1rem'
+            }}>
+                <div style={{
+                    width: 40, height: 40, border: '3px solid var(--border-light)',
+                    borderTop: '3px solid var(--primary)', borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite'
+                }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                <span style={{ fontSize: '0.9rem' }}>Loading…</span>
+            </div>
         );
     }
 

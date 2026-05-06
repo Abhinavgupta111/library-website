@@ -306,11 +306,12 @@
         width: 32px;
         height: 32px;
     }
-    /* Notification dropdown opens to the left on tiny screens */
+    /* Notification dropdown — pin to right edge of viewport */
     .dropdown-wrapper:last-child .dropdown-panel {
-        right: auto;
+        right: 0;
         left: auto;
-        max-width: calc(100vw - 1.25rem);
+        max-width: calc(100vw - 1rem);
+        transform: translateX(calc(100% - 32px - 0.625rem));
     }
 }
 
