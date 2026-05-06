@@ -15,11 +15,19 @@ const ForgotPassword = () => {
 
         setLoading(true);
         try {
-            const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`, { email });
+            const { data } = await axios.post(
+                `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`,
+                { email },
+                { timeout: 15000 }   // fail after 15 s instead of hanging forever
+            );
             setMsg({ type: 'success', text: data.message });
             setEmail('');
         } catch (err) {
-            setMsg({ type: 'error', text: err.response?.data?.message || 'Something went wrong. Try again.' });
+            if (err.code === 'ECONNABORTED') {
+                setMsg({ type: 'error', text: 'Request timed out — the email service may not be configured yet. Please try again later.' });
+            } else {
+                setMsg({ type: 'error', text: err.response?.data?.message || 'Something went wrong. Try again.' });
+            }
         } finally {
             setLoading(false);
         }

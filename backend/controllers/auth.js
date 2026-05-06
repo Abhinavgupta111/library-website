@@ -78,10 +78,11 @@ export const registerUser = async (req, res) => {
     };
 
     try {
-      await createTransporter().sendMail(mailOptions);
+      await sendMailWithTimeout(createTransporter(), mailOptions);
     } catch (mailErr) {
       // If email fails, remove the unverified account and tell the user
-      console.error('Verification email failed:', mailErr);
+      const reason = mailErr.message === 'EMAIL_TIMEOUT' ? 'Email service timed out.' : mailErr.message;
+      console.error('Verification email failed:', reason);
       await User.findByIdAndDelete(user._id);
       return res.status(500).json({ message: 'Could not send verification email. Please check your email address and try again.' });
     }
@@ -260,7 +261,19 @@ function createTransporter() {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,  // Gmail App Password (not your normal password)
     },
+    connectionTimeout: 10000,  // 10 s to connect
+    socketTimeout:     10000,  // 10 s idle socket
   });
+}
+
+// Wrapper: reject if sendMail takes longer than `ms` milliseconds
+function sendMailWithTimeout(transporter, options, ms = 12000) {
+  return Promise.race([
+    transporter.sendMail(options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('EMAIL_TIMEOUT')), ms)
+    ),
+  ]);
 }
 
 // @desc    Send password reset link to registered email
@@ -307,7 +320,7 @@ export const forgotPassword = async (req, res) => {
       `,
     };
 
-    await createTransporter().sendMail(mailOptions);
+    await sendMailWithTimeout(createTransporter(), mailOptions);
     res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
 
   } catch (error) {
