@@ -44,6 +44,10 @@ const io = new Server(server, {
   }
 });
 
+// Trust Render's reverse proxy — required for express-rate-limit to work correctly
+// Without this, every request throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', 1);
+
 // Register io singleton so controllers can emit events
 setIO(io);
 
