@@ -6,7 +6,14 @@ import Group from '../models/Group.js';
 // @access  Public
 export const getEvents = async (req, res) => {
   try {
-    const events = await Event.find({}).sort({ event_date: 1 }).populate('created_by', 'name');
+    // Filter events to only show upcoming ones (today onwards)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const events = await Event.find({ 
+      event_date: { $gte: today } 
+    }).sort({ event_date: 1 }).populate('created_by', 'name');
+    
     res.json(events);
   } catch (error) {
     res.status(500).json({ message: error.message });
