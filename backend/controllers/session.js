@@ -1,4 +1,5 @@
 import Session from '../models/Session.js';
+import User from '../models/User.js';
 import { logCheckIn, logCheckOut } from '../utils/excelLogger.js';
 import { getIO } from '../utils/socket.js';
 import { sheetsLogCheckIn, sheetsLogCheckOut } from '../utils/sheetsLogger.js';
@@ -31,11 +32,21 @@ export const postEntry = async (req, res) => {
       status: 'IN'
     });
 
+    // Fetch the student's roll_number to use as Student ID in logs
+    let rollNumber = '';
+    try {
+      const userDoc = await User.findById(targetStudentId).select('roll_number');
+      rollNumber = userDoc?.roll_number || targetStudentId.toString();
+    } catch { rollNumber = targetStudentId.toString(); }
+
+    // Build an enriched session object for loggers
+    const sessionForLog = { ...session.toObject(), studentId: rollNumber };
+
     // Log to Excel
-    logCheckIn(session);
+    logCheckIn(sessionForLog);
 
     // Log to Google Sheets (fire-and-forget)
-    sheetsLogCheckIn(session);
+    sheetsLogCheckIn(sessionForLog);
 
     // Notify all admin clients in real-time
     const io = getIO();
@@ -105,11 +116,21 @@ export const postExit = async (req, res) => {
     session.status = 'OUT';
     
     const updatedSession = await session.save();
+
+    // Fetch roll_number for the log
+    let rollNumberOut = '';
+    try {
+      const userDoc = await User.findById(updatedSession.studentId).select('roll_number');
+      rollNumberOut = userDoc?.roll_number || updatedSession.studentId.toString();
+    } catch { rollNumberOut = updatedSession.studentId.toString(); }
+
+    const sessionForLogOut = { ...updatedSession.toObject(), studentId: rollNumberOut };
+
     // Log check-out to Excel
-    logCheckOut(updatedSession);
+    logCheckOut(sessionForLogOut);
 
     // Log check-out to Google Sheets (fire-and-forget)
-    sheetsLogCheckOut(updatedSession);
+    sheetsLogCheckOut(sessionForLogOut);
 
     // Notify all admin clients in real-time
     const io = getIO();
