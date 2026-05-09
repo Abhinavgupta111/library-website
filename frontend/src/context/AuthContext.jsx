@@ -5,6 +5,7 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+console.log('[AuthContext] API endpoint:', API); // confirm production URL
 
 export const AuthProvider = ({ children }) => {
     const { getToken, isSignedIn, isLoaded: clerkLoaded } = useClerkAuth();
@@ -19,10 +20,10 @@ export const AuthProvider = ({ children }) => {
      * Optionally pass profile fields (branch, year, roll_number).
      */
     const syncWithBackend = useCallback(async (extraFields = {}) => {
-        try {
-            const token = await getToken();
-            if (!token) return null;
+        const token = await getToken();
+        if (!token) throw new Error('No Clerk session token available.');
 
+        try {
             const { data } = await axios.post(
                 `${API}/api/auth/sync`,
                 extraFields,
@@ -31,8 +32,13 @@ export const AuthProvider = ({ children }) => {
             setUserInfo(data);
             return data;
         } catch (err) {
-            console.error('[AuthContext] Backend sync failed:', err.response?.data || err.message);
-            return null;
+            // Log full details so we can see the real problem
+            console.error('[AuthContext] Backend sync failed:',
+                err.response?.status,
+                err.response?.data || err.message
+            );
+            // Re-throw so the caller (CompleteProfile, etc.) can show the real error
+            throw err;
         }
     }, [getToken]);
 
@@ -46,9 +52,9 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
-        // Signed in — sync with backend
+        // Signed in — sync with backend (suppress errors here; CompleteProfile handles them)
         setIsLoading(true);
-        syncWithBackend().finally(() => setIsLoading(false));
+        syncWithBackend().catch(() => {}).finally(() => setIsLoading(false));
     }, [isSignedIn, clerkLoaded, syncWithBackend]);
 
     // Axios interceptor: attach Clerk token to every request automatically
