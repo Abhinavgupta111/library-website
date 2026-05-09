@@ -64,8 +64,8 @@ export function logCheckIn(session) {
     const nextRow = data.length + 1; // 1-indexed, header is row 1
 
     const checkInTime = session.entryTime
-      ? new Date(session.entryTime).toLocaleString('en-IN', { hour12: true })
-      : new Date().toLocaleString('en-IN', { hour12: true });
+      ? new Date(session.entryTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })
+      : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
 
     const newRow = [
       nextRow - 1,                           // S.No (excluding header row)
@@ -98,11 +98,11 @@ export function logCheckOut(session) {
 
     const studentIdStr = session.studentId?.toString();
     const checkInTime  = session.entryTime
-      ? new Date(session.entryTime).toLocaleString('en-IN', { hour12: true })
+      ? new Date(session.entryTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })
       : '';
     const checkOutTime = session.exitTime
-      ? new Date(session.exitTime).toLocaleString('en-IN', { hour12: true })
-      : new Date().toLocaleString('en-IN', { hour12: true });
+      ? new Date(session.exitTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })
+      : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
 
     // Column indices (0-based): StudentID=col2, CheckInTime=col4, CheckOut=col5, Status=col6
     const STUDENT_ID_COL  = 2;
