@@ -25,9 +25,7 @@ const Home = () => {
     const [bookSearchStr, setBookSearchStr] = useState('');
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    const authConfig = userInfo?.token
-        ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
-        : {};
+
 
     const fetchSessions = () => {
         axios.get(`${ENDPOINT}/api/sessions?status=IN`)
@@ -73,7 +71,7 @@ const Home = () => {
                 studentId: userInfo._id,
                 name: userInfo.name,
                 purpose: sessionPurpose || 'General Study',
-            }, authConfig);
+            });
             setMySession(data);
             setShowPurposeInput(false);
             setSessionPurpose('');
@@ -89,7 +87,7 @@ const Home = () => {
         if (!mySession) return;
         setSessionLoading(true);
         try {
-            await axios.post(`${ENDPOINT}/api/sessions/exit/${mySession._id}`, {}, authConfig);
+            await axios.post(`${ENDPOINT}/api/sessions/exit/${mySession._id}`, {});
             setMySession(null);
             fetchSessions();
         } catch (err) {
@@ -105,7 +103,7 @@ const Home = () => {
         try {
             const { data } = await axios.put(`${ENDPOINT}/api/sessions/${mySession._id}`, {
                 booksRead: [selectedBook]
-            }, authConfig);
+            });
             setMySession(data);
             setSelectedBook('');
             setBookSearchStr('');

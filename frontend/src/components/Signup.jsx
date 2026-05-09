@@ -1,75 +1,77 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useSignUp } from '@clerk/clerk-react';
 import './Auth.css';
 
 const Signup = () => {
+    const { signUp, setActive, isLoaded } = useSignUp();
+    const navigate = useNavigate();
+
+    const [step,     setStep]     = useState('form');   // 'form' | 'verify'
     const [name,     setName]     = useState('');
     const [email,    setEmail]    = useState('');
     const [password, setPassword] = useState('');
-    const [branch,   setBranch]   = useState('IT');
-    const [year,     setYear]     = useState(1);
+    const [code,     setCode]     = useState('');
     const [error,    setError]    = useState('');
     const [loading,  setLoading]  = useState(false);
-    const [sent,     setSent]     = useState(false); // true after verification email sent
 
-    const navigate = useNavigate();
-
-    const submitHandler = async (e) => {
+    // ── Step 1: Create Clerk account & trigger verification email ─────────────
+    const handleSignUp = async (e) => {
         e.preventDefault();
+        if (!isLoaded) return;
         setError('');
 
-        if (!name || !email || !password) {
-            setError('Please complete all required fields.');
-            return;
-        }
-
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
         if (!passwordRegex.test(password)) {
-            setError('Password must be 8+ chars with uppercase, lowercase, digit & special character.');
+            setError('Password must be 8+ characters with uppercase, lowercase, and a digit.');
             return;
         }
 
         setLoading(true);
         try {
-            const config = { headers: { 'Content-Type': 'application/json' }, timeout: 25000 };
-            await axios.post(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`,
-                { name, email, password, branch, year: Number(year) },
-                config
-            );
-            setSent(true); // Show the "check your email" screen
+            const [firstName, ...rest] = name.trim().split(' ');
+            const lastName = rest.join(' ') || '';
+
+            await signUp.create({
+                firstName,
+                lastName,
+                emailAddress: email,
+                password,
+            });
+
+            // Send verification email
+            await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+            setStep('verify');
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Registration failed — is the server running?');
+            setError(err.errors?.[0]?.message || err.message || 'Registration failed.');
         } finally {
             setLoading(false);
         }
     };
 
-    // ── Email-sent confirmation screen ─────────────────────────────────────────
-    if (sent) {
-        return (
-            <div className="auth-page">
-                <div className="auth-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📬</div>
-                    <h1 style={{ color: '#f8fafc', fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-                        Check your inbox!
-                    </h1>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                        We sent a verification link to <strong style={{ color: '#60a5fa' }}>{email}</strong>.<br />
-                        Click the link to activate your account. It expires in 24 hours.
-                    </p>
-                    <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
-                        Didn't receive it? Check your spam folder.
-                    </p>
-                    <Link to="/login" className="auth-submit-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
-                        ← Back to Login
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    // ── Step 2: Verify the email code ─────────────────────────────────────────
+    const handleVerify = async (e) => {
+        e.preventDefault();
+        if (!isLoaded) return;
+        setError('');
+        setLoading(true);
+        try {
+            const result = await signUp.attemptEmailAddressVerification({ code });
+            if (result.status === 'complete') {
+                await setActive({ session: result.createdSessionId });
+                // Go to complete-profile to collect roll number
+                navigate('/complete-profile');
+            } else {
+                setError('Verification incomplete. Please try again.');
+            }
+        } catch (err) {
+            setError(err.errors?.[0]?.message || 'Invalid verification code.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="auth-page">
             <div className="auth-card">
@@ -80,120 +82,110 @@ const Signup = () => {
                     <span className="auth-brand-name">MAIT Library</span>
                 </div>
 
-                {/* Heading */}
-                <div className="auth-heading">
-                    <h1>Create an Account</h1>
-                    <p>Join the IT Department Library platform</p>
-                </div>
+                {/* ── Step 2: Verify Email ── */}
+                {step === 'verify' ? (
+                    <>
+                        <div className="auth-heading">
+                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📬</div>
+                            <h1>Verify your email</h1>
+                            <p>We sent a 6-digit code to <strong style={{ color: '#60a5fa' }}>{email}</strong></p>
+                        </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="auth-alert auth-alert-danger">
-                        <span className="auth-alert-icon">⚠️</span>
-                        <span>{error}</span>
-                    </div>
+                        {error && (
+                            <div className="auth-alert auth-alert-danger">
+                                <span className="auth-alert-icon">⚠️</span><span>{error}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleVerify} className="auth-form" noValidate>
+                            <div className="auth-field">
+                                <label className="auth-label" htmlFor="verify-code">Verification Code</label>
+                                <input
+                                    id="verify-code" type="text" className="auth-input"
+                                    placeholder="Enter 6-digit code"
+                                    value={code} onChange={e => setCode(e.target.value)}
+                                    required autoComplete="one-time-code"
+                                    style={{ textAlign: 'center', letterSpacing: '0.3em', fontSize: '1.1rem' }}
+                                />
+                                <span className="auth-hint">Check your inbox and spam folder.</span>
+                            </div>
+                            <button type="submit" className="auth-submit-btn" disabled={loading}>
+                                {loading ? 'Verifying…' : 'Verify & Continue →'}
+                            </button>
+                        </form>
+
+                        <div className="auth-footer">
+                            <button
+                                onClick={() => { setStep('form'); setError(''); }}
+                                style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontWeight: 600, fontSize: '0.825rem' }}
+                            >
+                                ← Back to Sign Up
+                            </button>
+                        </div>
+                    </>
+                )
+
+                /* ── Step 1: Sign-Up Form ── */
+                : (
+                    <>
+                        <div className="auth-heading">
+                            <h1>Create an Account</h1>
+                            <p>Join the IT Department Library platform</p>
+                        </div>
+
+                        {error && (
+                            <div className="auth-alert auth-alert-danger">
+                                <span className="auth-alert-icon">⚠️</span><span>{error}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSignUp} className="auth-form" noValidate>
+
+                            {/* Full Name */}
+                            <div className="auth-field">
+                                <label className="auth-label" htmlFor="su-name">Full Name</label>
+                                <input
+                                    id="su-name" type="text" className="auth-input"
+                                    placeholder="e.g. Aryan Mehta"
+                                    value={name} onChange={e => setName(e.target.value)}
+                                    required autoComplete="name"
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div className="auth-field">
+                                <label className="auth-label" htmlFor="su-email">Email Address</label>
+                                <input
+                                    id="su-email" type="email" className="auth-input"
+                                    placeholder="yourname@mait.ac.in"
+                                    value={email} onChange={e => setEmail(e.target.value)}
+                                    required autoComplete="email"
+                                />
+                            </div>
+
+                            {/* Password */}
+                            <div className="auth-field">
+                                <label className="auth-label" htmlFor="su-password">Password</label>
+                                <input
+                                    id="su-password" type="password" className="auth-input"
+                                    placeholder="Create a strong password"
+                                    value={password} onChange={e => setPassword(e.target.value)}
+                                    required autoComplete="new-password"
+                                />
+                                <span className="auth-hint">8+ characters · Uppercase · Lowercase · Digit</span>
+                            </div>
+
+                            <button type="submit" className="auth-submit-btn" disabled={loading || !isLoaded}>
+                                {loading ? 'Creating account…' : 'Create Account →'}
+                            </button>
+                        </form>
+
+                        <div className="auth-footer">
+                            Already have an account?
+                            <Link to="/login">Login</Link>
+                        </div>
+                    </>
                 )}
-
-                {/* Form */}
-                <form onSubmit={submitHandler} className="auth-form" noValidate>
-
-                    {/* Full Name */}
-                    <div className="auth-field">
-                        <label className="auth-label" htmlFor="su-name">Full Name</label>
-                        <input
-                            id="su-name"
-                            type="text"
-                            className="auth-input"
-                            placeholder="e.g. Aryan Mehta"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            required
-                            autoComplete="name"
-                        />
-                    </div>
-
-                    {/* Email */}
-                    <div className="auth-field">
-                        <label className="auth-label" htmlFor="su-email">Email Address</label>
-                        <input
-                            id="su-email"
-                            type="email"
-                            className="auth-input"
-                            placeholder="yourname@mait.ac.in"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                            autoComplete="email"
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div className="auth-field">
-                        <label className="auth-label" htmlFor="su-password">Password</label>
-                        <input
-                            id="su-password"
-                            type="password"
-                            name="password"
-                            className="auth-input"
-                            placeholder="Create a strong password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            autoComplete="new-password"
-                        />
-                        <span className="auth-hint">
-                            8+ characters · Uppercase · Lowercase · Digit · Special symbol (@$!%*?&)
-                        </span>
-                    </div>
-
-                    {/* Branch + Year — side by side */}
-                    <div className="auth-form-row">
-                        <div className="auth-field">
-                            <label className="auth-label" htmlFor="su-branch">Branch</label>
-                            <div className="auth-select-wrap">
-                                <select
-                                    id="su-branch"
-                                    className="auth-input auth-select"
-                                    value={branch}
-                                    onChange={e => setBranch(e.target.value)}
-                                >
-                                    <option value="IT">Information Technology</option>
-                                    <option value="CSE">Computer Science</option>
-                                    <option value="ECE">Electronics</option>
-                                    <option value="ME">Mechanical</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="auth-field">
-                            <label className="auth-label" htmlFor="su-year">Year</label>
-                            <div className="auth-select-wrap">
-                                <select
-                                    id="su-year"
-                                    className="auth-input auth-select"
-                                    value={year}
-                                    onChange={e => setYear(e.target.value)}
-                                >
-                                    <option value={1}>1st Year</option>
-                                    <option value={2}>2nd Year</option>
-                                    <option value={3}>3rd Year</option>
-                                    <option value={4}>4th Year</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Submit */}
-                    <button type="submit" className="auth-submit-btn" disabled={loading}>
-                        {loading ? 'Creating account…' : 'Create Account →'}
-                    </button>
-                </form>
-
-                {/* Footer */}
-                <div className="auth-footer">
-                    Already have an account?
-                    <Link to="/login">Login</Link>
-                </div>
 
             </div>
         </div>

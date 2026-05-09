@@ -179,9 +179,7 @@ const Chat = () => {
     const socketRef = useRef(null);
     const inputRef = useRef(null);
 
-    const authConfig = userInfo?.token
-        ? { headers: { Authorization: `Bearer ${userInfo.token}` } }
-        : {};
+
 
     // ─────────────────────────────────────────────
     // Socket Initialization & Listeners
@@ -219,7 +217,7 @@ const Chat = () => {
         if (!userInfo) return;
         const fetchGroups = async () => {
             try {
-                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups`, authConfig);
+                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups`, {});
                 setGroups(data);
                 setSidebarError(null);
             } catch (error) {
@@ -241,7 +239,7 @@ const Chat = () => {
         const fetchMessages = async () => {
             setLoadingMessages(true);
             try {
-                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups/${selectedGroup._id}/messages`, authConfig);
+                const { data } = await axios.get(`${ENDPOINT}/api/chat/groups/${selectedGroup._id}/messages`, {});
                 setMessages(data);
                 if (socketRef.current) {
                     socketRef.current.emit('join_chat', selectedGroup._id);
@@ -291,10 +289,7 @@ const Chat = () => {
             const formData = new FormData();
             formData.append('file', file);
             const { data } = await axios.post(`${ENDPOINT}/api/chat/upload`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {})
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             setFilePreview(prev => ({ ...prev, fileUrl: data.url }));
         } catch (err) {
@@ -357,7 +352,7 @@ const Chat = () => {
 
     const handleJoinGroup = async (group) => {
         try {
-            await axios.post(`${ENDPOINT}/api/chat/groups/${group._id}/join`, {}, authConfig);
+            await axios.post(`${ENDPOINT}/api/chat/groups/${group._id}/join`, {}, {});
             setSelectedGroup(group);
         } catch (error) {
             setSelectedGroup(group);

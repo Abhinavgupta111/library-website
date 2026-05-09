@@ -1,15 +1,17 @@
 import express from 'express';
-import { registerUser, loginUser, getUserProfile, searchUsers, updateUserProfile, forgotPassword, resetPassword, verifyEmail } from '../controllers/auth.js';
+import { syncUser, getUserProfile, updateUserProfile, searchUsers } from '../controllers/auth.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/register', registerUser);
-router.post('/login', loginUser);
-router.get('/verify-email/:token', verifyEmail);
-router.post('/forgot-password', forgotPassword);
-router.put('/reset-password/:token', resetPassword);
-router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+// Clerk-authenticated sync (called on every login/signup from frontend)
+router.post('/sync', syncUser);
+
+// Protected profile routes
+router.route('/profile')
+  .get(protect, getUserProfile)
+  .put(protect, updateUserProfile);
+
 router.get('/users/search', protect, searchUsers);
 
 export default router;

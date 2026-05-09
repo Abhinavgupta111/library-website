@@ -1,129 +1,77 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import axios from 'axios';
 
 const AuthContext = createContext();
 
-/**
- * Decode a JWT without verifying the signature (client-side expiry check only).
- * Real verification is always done server-side.
- */
-function decodeJwt(token) {
-    try {
-        const payload = token.split('.')[1];
-        return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    } catch {
-        return null;
-    }
-}
-
-function isTokenExpired(token) {
-    if (!token) return true;
-    const decoded = decodeJwt(token);
-    if (!decoded || !decoded.exp) return true;
-    // Give a 30-second buffer so we log out slightly before expiry
-    return decoded.exp * 1000 < Date.now() + 30_000;
-}
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AuthProvider = ({ children }) => {
+    const { getToken, isSignedIn, isLoaded: clerkLoaded } = useClerkAuth();
+    const { user: clerkUser } = useUser();
+
+    // Library-specific profile from MongoDB
     const [userInfo, setUserInfo] = useState(null);
-    const [isLoading, setIsLoading] = useState(true); // true until localStorage check is done
+    const [isLoading, setIsLoading] = useState(true);
 
-    // ── Secure logout ─────────────────────────────────────────────────────────
-    const logout = useCallback(() => {
-        localStorage.removeItem('userInfo');
-        setUserInfo(null);
-    }, []);
-
-    // ── On mount: restore session, validate token expiry ─────────────────────
-    useEffect(() => {
+    /**
+     * Call our backend to sync Clerk user with MongoDB.
+     * Optionally pass profile fields (branch, year, roll_number).
+     */
+    const syncWithBackend = useCallback(async (extraFields = {}) => {
         try {
-            const stored = localStorage.getItem('userInfo');
-            if (!stored) {
-                setIsLoading(false);
-                return;
-            }
+            const token = await getToken();
+            if (!token) return null;
 
-            const parsed = JSON.parse(stored);
+            const { data } = await axios.post(
+                `${API}/api/auth/sync`,
+                extraFields,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setUserInfo(data);
+            return data;
+        } catch (err) {
+            console.error('[AuthContext] Backend sync failed:', err.response?.data || err.message);
+            return null;
+        }
+    }, [getToken]);
 
-            // Basic structural sanity check
-            if (!parsed || !parsed.token || !parsed._id || !parsed.email) {
-                localStorage.removeItem('userInfo');
-                setIsLoading(false);
-                return;
-            }
+    // Sync whenever Clerk auth state changes
+    useEffect(() => {
+        if (!clerkLoaded) return;
 
-            // Reject expired tokens immediately
-            if (isTokenExpired(parsed.token)) {
-                console.warn('[AuthContext] Token expired — clearing session.');
-                localStorage.removeItem('userInfo');
-                setIsLoading(false);
-                return;
-            }
-
-            setUserInfo(parsed);
-        } catch {
-            localStorage.removeItem('userInfo');
-        } finally {
+        if (!isSignedIn) {
+            setUserInfo(null);
             setIsLoading(false);
+            return;
         }
-    }, []);
 
-    // ── Axios interceptor: auto-logout on 401 / 423 from any API call ─────────
+        // Signed in — sync with backend
+        setIsLoading(true);
+        syncWithBackend().finally(() => setIsLoading(false));
+    }, [isSignedIn, clerkLoaded, syncWithBackend]);
+
+    // Axios interceptor: attach Clerk token to every request automatically
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
-            (res) => res,
-            (err) => {
-                const status = err?.response?.status;
-                if (status === 401 || status === 423) {
-                    console.warn(`[AuthContext] Received ${status} — forcing logout.`);
-                    logout();
-                    // Redirect without React Router (context may not have navigate)
-                    if (!window.location.pathname.startsWith('/login') &&
-                        !window.location.pathname.startsWith('/register')) {
-                        window.location.href = '/login';
-                    }
-                }
-                return Promise.reject(err);
+        const reqInterceptor = axios.interceptors.request.use(async (config) => {
+            if (isSignedIn) {
+                try {
+                    const token = await getToken();
+                    if (token) config.headers.Authorization = `Bearer ${token}`;
+                } catch {/* ignore */}
             }
-        );
-        return () => axios.interceptors.response.eject(interceptor);
-    }, [logout]);
-
-    // ── Periodic expiry check (every 60 s) ───────────────────────────────────
-    useEffect(() => {
-        if (!userInfo?.token) return;
-        const timer = setInterval(() => {
-            if (isTokenExpired(userInfo.token)) {
-                console.warn('[AuthContext] Token expired (periodic check) — logging out.');
-                logout();
-            }
-        }, 60_000);
-        return () => clearInterval(timer);
-    }, [userInfo, logout]);
-
-    // ── Login: store only the minimal user object ─────────────────────────────
-    const login = (userData) => {
-        try {
-            // Only keep necessary fields — never store passwords or sensitive extras
-            const safe = {
-                _id:         userData._id,
-                name:        userData.name,
-                email:       userData.email,
-                role:        userData.role,
-                branch:      userData.branch,
-                year:        userData.year,
-                roll_number: userData.roll_number,
-                token:       userData.token,
-            };
-            localStorage.setItem('userInfo', JSON.stringify(safe));
-            setUserInfo(safe);
-        } catch (error) {
-            console.error('[AuthContext] Failed to store user info:', error);
-        }
-    };
+            return config;
+        });
+        return () => axios.interceptors.request.eject(reqInterceptor);
+    }, [isSignedIn, getToken]);
 
     return (
-        <AuthContext.Provider value={{ userInfo, isLoading, login, logout }}>
+        <AuthContext.Provider value={{
+            userInfo,
+            isLoading,
+            clerkUser,
+            syncWithBackend,
+        }}>
             {children}
         </AuthContext.Provider>
     );

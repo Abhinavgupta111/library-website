@@ -42,6 +42,8 @@ backend/booksData.json
 backend/response.json
 backend/.env
 backend/.env.*
+frontend/.env
+frontend/.env.*
 *.pem
 *.key
 *.cert

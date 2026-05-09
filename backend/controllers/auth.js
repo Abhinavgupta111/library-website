@@ -1,419 +1,155 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { Resend } from 'resend';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 import User from '../models/User.js';
 
-// Generate JWT token — short-lived (7 days)
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '7d',
-  });
-};
-
-// @desc    Register new user
-// @route   POST /api/auth/register
-// @access  Public
-export const registerUser = async (req, res) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Sync Clerk user with MongoDB after login / signup
+//          Also accepts optional profile fields (branch, year, roll_number)
+// @route   POST /api/auth/sync
+// @access  Public (but validates Clerk Bearer token internally)
+// ─────────────────────────────────────────────────────────────────────────────
+export const syncUser = async (req, res) => {
   try {
-    const { name, email, password, role, branch, year, roll_number } = req.body;
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    if (!token) return res.status(401).json({ message: 'No token provided.' });
 
-    if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Please provide all required fields' });
+    // Verify the Clerk session token
+    let payload;
+    try {
+      payload = await clerkClient.verifyToken(token);
+    } catch {
+      return res.status(401).json({ message: 'Invalid or expired session token.' });
     }
 
-    // Password complexity check: 8+ chars, upper, lower, digit, special char
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-        return res.status(400).json({ 
-            message: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' 
-        });
-    }
+    const clerkId = payload.sub;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
-    }
+    // Fetch user details from Clerk
+    const clerkUser = await clerkClient.users.getUser(clerkId);
+    const email = clerkUser.emailAddresses?.[0]?.emailAddress || '';
+    const name  = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User';
 
-    // Generate a secure email verification token
-    const rawToken    = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    // Extract optional profile fields from body
+    const { branch, year, roll_number } = req.body || {};
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: role || 'Student',
-      branch,
-      year,
-      roll_number,
-      isVerified:        false,
-      emailVerifyToken:  hashedToken,
-      emailVerifyExpire: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-    });
+    // Find or create the MongoDB user
+    let user = await User.findOne({ clerkId });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid user data received. Could not create account.' });
-    }
-
-    // Build the verify URL (frontend route)
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${rawToken}`;
-
-    const mailOptions = {
-      from: `"MAIT Library" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: '✅ Verify your MAIT Library account',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-          <h2 style="color: #4f6ef7; margin-bottom: 8px;">Welcome to MAIT Library, ${user.name}! 📚</h2>
-          <p style="color: #4a5568;">Thanks for signing up. Please verify your email address to activate your account.</p>
-          <p style="color: #4a5568;">This link is valid for <strong>24 hours</strong>.</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${verifyUrl}" style="background: #4f6ef7; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Verify My Email →</a>
-          </div>
-          <p style="color: #718096; font-size: 13px;">If you did not create this account, you can safely ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-          <p style="color: #a0aec0; font-size: 12px; text-align: center;">MAIT Library System · IT Department</p>
-        </div>
-      `,
-    };
-
-    try {
-      const resend = new Resend(process.env.RESEND_API_KEY || 're_h5ocTfe8_FXoTwtYUFXYpXpGwwBQqfiG4');
-      const { data, error } = await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: user.email,
-        subject: '✅ Verify your MAIT Library account',
-        html: mailOptions.html,
+      // First time — create a new record
+      user = await User.create({
+        clerkId,
+        name,
+        email,
+        role: 'Student',
+        branch:      branch  || undefined,
+        year:        year    ? Number(year) : undefined,
+        roll_number: roll_number || undefined,
+        profileComplete: !!(roll_number),
+        lastLogin: new Date(),
       });
-      
-      if (error) {
-        throw new Error(error.message);
+    } else {
+      // Existing user — update name/email from Clerk & merge any new profile fields
+      user.name      = name;
+      user.email     = email;
+      user.lastLogin = new Date();
+
+      if (branch)      user.branch      = branch;
+      if (year)        user.year        = Number(year);
+      if (roll_number) {
+        user.roll_number    = roll_number;
+        user.profileComplete = true;
       }
-    } catch (mailErr) {
-      // If email fails, remove the unverified account and tell the user
-      console.error('Verification email failed:', mailErr.message);
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({ message: 'Could not send verification email. Please check your email address and try again.' });
+
+      await user.save();
     }
-
-    res.status(201).json({
-      message: 'Account created! A verification link has been sent to your email. Please check your inbox (and spam folder) to activate your account.',
-      requiresVerification: true,
-    });
-
-  } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({ message: 'Server error during registration.', error: error.message });
-  }
-};
-
-// @desc    Authenticate a user
-// @route   POST /api/auth/login
-// @access  Public
-export const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
-    }
-
-    // Normalise email
-    const normEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normEmail });
-
-    // ── Account lockout check ───────────────────────────────────────
-    const MAX_ATTEMPTS  = 5;
-    const LOCK_DURATION = 30 * 60 * 1000; // 30 minutes
-
-    if (user && user.lockUntil && user.lockUntil > Date.now()) {
-      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
-      return res.status(423).json({
-        message: `Account temporarily locked due to too many failed login attempts. Try again in ${minutesLeft} minute(s).`,
-      });
-    }
-
-    const passwordOk = user && (await user.matchPassword(password));
-
-    if (!passwordOk) {
-      if (user) {
-        user.loginAttempts += 1;
-        if (user.loginAttempts >= MAX_ATTEMPTS) {
-          user.lockUntil = new Date(Date.now() + LOCK_DURATION);
-          console.warn(`[Security] Account locked: ${normEmail} after ${user.loginAttempts} failed attempts.`);
-        }
-        await user.save({ validateBeforeSave: false });
-      }
-      // Generic message — don't reveal whether the email exists
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // ── Block unverified accounts ────────────────────────────────────
-    // Bypass verification for default seeded accounts since those emails don't exist
-    const seededEmails = ['admin@example.com', 'student1@example.com', 'lib@example.com'];
-    if (!user.isVerified && !seededEmails.includes(user.email)) {
-      return res.status(403).json({
-        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
-        requiresVerification: true,
-      });
-    }
-
-    // ── Success — reset lockout counters ────────────────────────────
-    user.loginAttempts = 0;
-    user.lockUntil     = undefined;
-    user.lastLogin     = new Date();
-    await user.save({ validateBeforeSave: false });
 
     res.status(200).json({
-      _id:         user._id,
-      name:        user.name,
-      email:       user.email,
-      role:        user.role,
-      branch:      user.branch,
-      year:        user.year,
-      roll_number: user.roll_number,
-      token:       generateToken(user._id),
+      _id:             user._id,
+      clerkId:         user.clerkId,
+      name:            user.name,
+      email:           user.email,
+      role:            user.role,
+      branch:          user.branch,
+      year:            user.year,
+      roll_number:     user.roll_number,
+      profileComplete: user.profileComplete,
     });
   } catch (error) {
-    console.error('Login Error:', error);
-    res.status(500).json({ message: 'Server error during login.' });
+    console.error('[syncUser] Error:', error);
+    res.status(500).json({ message: 'Server error during user sync.', error: error.message });
   }
 };
 
-// @desc    Get user profile
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Get current user's profile
 // @route   GET /api/auth/profile
 // @access  Private
+// ─────────────────────────────────────────────────────────────────────────────
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: 'User not found' });
-    }
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Update user profile (branch, year, roll_number, name)
+// @route   PUT /api/auth/profile
+// @access  Private
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (req.body.name)        user.name        = req.body.name;
+    if (req.body.branch)      user.branch      = req.body.branch;
+    if (req.body.year)        user.year        = Number(req.body.year);
+    if (req.body.roll_number) {
+      user.roll_number    = req.body.roll_number;
+      user.profileComplete = true;
+    }
+
+    const updated = await user.save();
+    res.status(200).json({
+      _id:             updated._id,
+      name:            updated.name,
+      email:           updated.email,
+      role:            updated.role,
+      branch:          updated.branch,
+      year:            updated.year,
+      roll_number:     updated.roll_number,
+      profileComplete: updated.profileComplete,
+    });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ message: 'Server error during profile update.', error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // @desc    Search users by name or email
 // @route   GET /api/auth/users/search
 // @access  Private
+// ─────────────────────────────────────────────────────────────────────────────
 export const searchUsers = async (req, res) => {
   try {
     const keyword = req.query.search
       ? {
           $or: [
-            { name: { $regex: req.query.search, $options: 'i' } },
+            { name:  { $regex: req.query.search, $options: 'i' } },
             { email: { $regex: req.query.search, $options: 'i' } },
           ],
         }
       : {};
 
-    // Do not return the current user
-    const users = await User.find({ ...keyword, _id: { $ne: req.user._id } }).select('name email role');
+    const users = await User.find({ ...keyword, _id: { $ne: req.user._id } })
+      .select('name email role');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Update user profile
-// @route   PUT /api/auth/profile
-// @access  Private
-export const updateUserProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.branch = req.body.branch || user.branch;
-      user.year = req.body.year || user.year;
-      user.roll_number = req.body.roll_number || user.roll_number;
-
-      if (req.body.password) {
-        // Password complexity check
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(req.body.password)) {
-            return res.status(400).json({ 
-                message: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' 
-            });
-        }
-        user.password = req.body.password;
-      }
-
-      const updatedUser = await user.save();
-
-      res.status(200).json({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        branch: updatedUser.branch,
-        year: updatedUser.year,
-        roll_number: updatedUser.roll_number,
-        token: generateToken(updatedUser._id), // re-issue token just in case
-      });
-    } else {
-      res.status(404).json({ message: 'User not found' });
-    }
-  } catch (error) {
-    console.error("Update Profile Error:", error);
-    res.status(500).json({ message: 'Server error during profile update.', error: error.message });
-  }
-};
-
-// Resend API is now used instead of Nodemailer.
-
-// @desc    Send password reset link to registered email
-// @route   POST /api/auth/forgot-password
-// @access  Public
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Please provide your email address.' });
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      // Don't reveal whether the email exists — security best practice
-      return res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
-    }
-
-    // Generate secure random token
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-
-    user.resetPasswordToken  = hashedToken;
-    user.resetPasswordExpire = Date.now() + 60 * 60 * 1000; // 1 hour
-    await user.save({ validateBeforeSave: false });
-
-    // Build reset URL (frontend route)
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${rawToken}`;
-
-    const mailOptions = {
-      from: `"MAIT Library" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: '🔐 Password Reset Request — MAIT Library',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-          <h2 style="color: #4f6ef7; margin-bottom: 8px;">MAIT Library — Password Reset</h2>
-          <p style="color: #4a5568;">Hello <strong>${user.name}</strong>,</p>
-          <p style="color: #4a5568;">We received a request to reset your password. Click the button below to create a new password. This link is valid for <strong>1 hour</strong>.</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetUrl}" style="background: #4f6ef7; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Reset My Password</a>
-          </div>
-          <p style="color: #718096; font-size: 13px;">If you did not request this, you can safely ignore this email. Your password will not change.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-          <p style="color: #a0aec0; font-size: 12px; text-align: center;">MAIT Library System · IT Department</p>
-        </div>
-      `,
-    };
-
-    const resend = new Resend(process.env.RESEND_API_KEY || 're_h5ocTfe8_FXoTwtYUFXYpXpGwwBQqfiG4');
-    const { data, error: resendError } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: user.email,
-      subject: '🔐 Password Reset Request — MAIT Library',
-      html: mailOptions.html,
-    });
-
-    if (resendError) {
-      throw new Error(resendError.message);
-    }
-
-    res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
-
-  } catch (error) {
-    // Log the full error so we can diagnose it in Render logs
-    console.error('[ForgotPassword] Email send failed:');
-    console.error('  Message :', error.message);
-    console.error('  Code    :', error.code);
-    console.error('  Response:', error.response);
-    // Clean up token if mail failed
-    try {
-      const user = await User.findOne({ email: req.body.email });
-      if (user) {
-        user.resetPasswordToken  = undefined;
-        user.resetPasswordExpire = undefined;
-        await user.save({ validateBeforeSave: false });
-      }
-    } catch (_) {}
-    const clientMsg = error.message === 'EMAIL_TIMEOUT'
-      ? 'Email server took too long to respond. Please try again.'
-      : 'Failed to send email. Please try again later.';
-    res.status(500).json({ message: clientMsg });
-  }
-};
-
-// @desc    Verify a user's email address via token link
-// @route   GET /api/auth/verify-email/:token
-// @access  Public
-export const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
-    if (!token) return res.status(400).json({ message: 'Verification token is missing.' });
-
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await User.findOne({
-      emailVerifyToken:  hashedToken,
-      emailVerifyExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: 'Verification link is invalid or has expired. Please register again.' });
-    }
-
-    user.isVerified        = true;
-    user.emailVerifyToken  = undefined;
-    user.emailVerifyExpire = undefined;
-    await user.save({ validateBeforeSave: false });
-
-    res.status(200).json({ message: 'Email verified successfully! You can now log in.' });
-  } catch (error) {
-    console.error('Email Verification Error:', error);
-    res.status(500).json({ message: 'Server error during email verification.' });
-  }
-};
-
-// @desc    Reset password using token from email link
-// @route   PUT /api/auth/reset-password/:token
-// @access  Public
-export const resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
-
-    if (!password) return res.status(400).json({ message: 'Please provide a new password.' });
-
-    // Hash the incoming token and look it up
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await User.findOne({
-      resetPasswordToken:  hashedToken,
-      resetPasswordExpire: { $gt: Date.now() },  // not expired
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: 'Reset link is invalid or has expired. Please request a new one.' });
-    }
-
-    // Password complexity check
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({
-        message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.',
-      });
-    }
-
-    user.password            = password;  // pre-save hook will hash it
-    user.resetPasswordToken  = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-
-    res.status(200).json({ message: 'Password reset successful! You can now log in.' });
-
-  } catch (error) {
-    console.error('Reset Password Error:', error);
-    res.status(500).json({ message: 'Server error during password reset.', error: error.message });
   }
 };

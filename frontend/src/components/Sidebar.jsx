@@ -1,15 +1,21 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
     const navigate = useNavigate();
+    const { signOut } = useClerk();
     const { isSidebarCollapsed } = useTheme();
-    const userInfo = JSON.parse(localStorage.getItem('userInfo')) || { name: 'Sarah Jenkins', role: 'Student' };
+    const { userInfo } = useAuth();
 
-    const logoutHandler = () => {
-        localStorage.removeItem('userInfo');
+    const displayName = userInfo?.name || 'User';
+    const displayRole = userInfo?.role || 'Student';
+
+    const logoutHandler = async () => {
+        await signOut();
         navigate('/login');
     };
 
@@ -41,7 +47,7 @@ const Sidebar = () => {
                     </NavLink>
                 </div>
 
-                {(userInfo?.role === 'Admin' || userInfo?.role === 'Librarian') && (
+                {(displayRole === 'Admin' || displayRole === 'Librarian') && (
                     <div className="nav-section">
                         {!isSidebarCollapsed && <div className="nav-label">Administration</div>}
                         <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} title="Admin Dashboard">
@@ -55,12 +61,12 @@ const Sidebar = () => {
             <div className="sidebar-profile">
                 <div className="profile-info" onClick={() => navigate('/settings')}>
                     <div className="profile-avatar">
-                        {userInfo.name.charAt(0)}
+                        {displayName.charAt(0).toUpperCase()}
                     </div>
                     {!isSidebarCollapsed && (
                         <div className="profile-text">
-                            <div className="profile-name">{userInfo.name}</div>
-                            <div className="profile-role">{userInfo.role}</div>
+                            <div className="profile-name">{displayName}</div>
+                            <div className="profile-role">{displayRole}</div>
                         </div>
                     )}
                 </div>
