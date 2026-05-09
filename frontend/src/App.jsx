@@ -45,8 +45,9 @@ const AppRoutes = () => {
     const isAuthPage = ['/login', '/signup'].includes(location.pathname);
     const isProfilePage = location.pathname === '/complete-profile';
 
-    // Auth pages — accessible when signed out
+    // Auth pages — redirect away if already signed in
     if (isAuthPage) {
+        if (isSignedIn) return <Navigate to="/" replace />;
         return (
             <Routes>
                 <Route path="/login"  element={<Login />} />

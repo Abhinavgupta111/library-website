@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useSignIn, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import './Auth.css';
 
 const Login = () => {
     const { signIn, setActive, isLoaded } = useSignIn();
+    const { isSignedIn } = useClerkAuth();
     const navigate = useNavigate();
+
+    // If already signed in, go to dashboard immediately
+    useEffect(() => {
+        if (isSignedIn) navigate('/', { replace: true });
+    }, [isSignedIn, navigate]);
 
     const [email,    setEmail]    = useState('');
     const [password, setPassword] = useState('');
@@ -32,6 +38,12 @@ const Login = () => {
                 navigate('/');
             }
         } catch (err) {
+            const code = err.errors?.[0]?.code || '';
+            // If a session already exists, just redirect home
+            if (code === 'session_exists' || code === 'identifier_already_signed_in') {
+                navigate('/', { replace: true });
+                return;
+            }
             const msg = err.errors?.[0]?.message || err.message || 'Login failed.';
             setError(msg);
         } finally {
