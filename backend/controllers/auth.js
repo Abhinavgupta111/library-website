@@ -24,9 +24,32 @@ export const syncUser = async (req, res) => {
     const { branch, year, roll_number } = req.body || {};
 
     // Find or create the MongoDB user
+    // 1. Look up by clerkId first
     let user = await User.findOne({ clerkId });
 
+    // 2. If not found by clerkId, check if an OLD user exists with the same email
+    //    (migration case: user signed up with old JWT system, now migrating to Clerk)
     if (!user) {
+      user = await User.findOne({ email });
+      if (user) {
+        // Migrate old record — attach the new clerkId
+        user.clerkId = clerkId;
+        user.name    = name;
+        user.lastLogin = new Date();
+        if (branch)      user.branch      = branch;
+        if (year)        user.year        = Number(year);
+        if (roll_number) {
+          user.roll_number     = roll_number;
+          user.profileComplete = true;
+        }
+        // Mark profile complete if they already had a roll_number from before
+        if (user.roll_number) user.profileComplete = true;
+        await user.save();
+      }
+    }
+
+    if (!user) {
+      // Brand new user — create fresh
       user = await User.create({
         clerkId,
         name,
@@ -38,18 +61,17 @@ export const syncUser = async (req, res) => {
         profileComplete: !!(roll_number),
         lastLogin: new Date(),
       });
-    } else {
+    } else if (user.clerkId === clerkId) {
+      // Existing Clerk user — update name/email + any new profile fields
       user.name      = name;
       user.email     = email;
       user.lastLogin = new Date();
-
       if (branch)      user.branch      = branch;
       if (year)        user.year        = Number(year);
       if (roll_number) {
         user.roll_number     = roll_number;
         user.profileComplete = true;
       }
-
       await user.save();
     }
 
