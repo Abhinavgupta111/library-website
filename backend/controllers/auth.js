@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import User from '../models/User.js';
 
 // Generate JWT token — short-lived (7 days)
@@ -78,11 +78,20 @@ export const registerUser = async (req, res) => {
     };
 
     try {
-      await sendMailWithTimeout(createTransporter(), mailOptions);
+      const resend = new Resend(process.env.RESEND_API_KEY || 're_h5ocTfe8_FXoTwtYUFXYpXpGwwBQqfiG4');
+      const { data, error } = await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: user.email,
+        subject: '✅ Verify your MAIT Library account',
+        html: mailOptions.html,
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (mailErr) {
       // If email fails, remove the unverified account and tell the user
-      const reason = mailErr.message === 'EMAIL_TIMEOUT' ? 'Email service timed out.' : mailErr.message;
-      console.error('Verification email failed:', reason);
+      console.error('Verification email failed:', mailErr.message);
       await User.findByIdAndDelete(user._id);
       return res.status(500).json({ message: 'Could not send verification email. Please check your email address and try again.' });
     }
@@ -255,42 +264,7 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// ── Nodemailer transporter (Gmail SMTP — explicit settings) ──────────────────
-function createTransporter() {
-  // Pre-flight check — log if creds are missing so we can see it in Render logs
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error('[Email] EMAIL_USER or EMAIL_PASS env var is missing!');
-  } else {
-    console.log(`[Email] Transporter ready for ${process.env.EMAIL_USER}`);
-  }
-
-  return nodemailer.createTransport({
-    service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,          // use SSL
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,  // 16-char Gmail App Password (requires 2FA on the account)
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 20000,
-    greetingTimeout:   15000,
-    socketTimeout:     20000,
-  });
-}
-
-// Wrapper: reject if sendMail takes longer than `ms` milliseconds
-function sendMailWithTimeout(transporter, options, ms = 20000) {
-  return Promise.race([
-    transporter.sendMail(options),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('EMAIL_TIMEOUT')), ms)
-    ),
-  ]);
-}
+// Resend API is now used instead of Nodemailer.
 
 // @desc    Send password reset link to registered email
 // @route   POST /api/auth/forgot-password
@@ -336,7 +310,18 @@ export const forgotPassword = async (req, res) => {
       `,
     };
 
-    await sendMailWithTimeout(createTransporter(), mailOptions);
+    const resend = new Resend(process.env.RESEND_API_KEY || 're_h5ocTfe8_FXoTwtYUFXYpXpGwwBQqfiG4');
+    const { data, error: resendError } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: user.email,
+      subject: '🔐 Password Reset Request — MAIT Library',
+      html: mailOptions.html,
+    });
+
+    if (resendError) {
+      throw new Error(resendError.message);
+    }
+
     res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' });
 
   } catch (error) {
