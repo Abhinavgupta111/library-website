@@ -3,6 +3,12 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import dns from 'dns';
+
+// Force Node.js to prefer IPv4 over IPv6 for all DNS resolutions.
+// This prevents Nodemailer (and MongoDB) timeouts on Render caused by Google dropping IPv6 connections.
+dns.setDefaultResultOrder('ipv4first');
+
 import connectDB from './config/db.js';
 import { setIO } from './utils/socket.js';
 
