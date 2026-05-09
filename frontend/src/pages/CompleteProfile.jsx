@@ -33,10 +33,11 @@ const CompleteProfile = () => {
             if (profile) {
                 navigate('/');
             } else {
-                setError('Failed to save profile. Please try again.');
+                setError('Failed to save profile — backend did not respond. Make sure CLERK_SECRET_KEY is set on Render.');
             }
-        } catch {
-            setError('Something went wrong. Please try again.');
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.message || 'Unknown error';
+            setError(`Error: ${msg}`);
         } finally {
             setLoading(false);
         }

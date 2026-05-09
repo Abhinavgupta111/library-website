@@ -12,11 +12,7 @@ services:
         value: 5000
       - key: MONGO_URI
         value: mongodb+srv://abhinav:abhi1111@cluster0.kmbqldx.mongodb.net/smartcampus?appName=Cluster0
-      - key: JWT_SECRET
-        sync: false
-      - key: EMAIL_USER
-        value: maititlibrary@gmail.com
-      - key: EMAIL_PASS
+      - key: CLERK_SECRET_KEY
         sync: false
       - key: FRONTEND_URL
         value: https://library-website-hazel.vercel.app
