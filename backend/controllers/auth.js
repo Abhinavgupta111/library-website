@@ -140,7 +140,9 @@ export const loginUser = async (req, res) => {
     }
 
     // ── Block unverified accounts ────────────────────────────────────
-    if (!user.isVerified) {
+    // Bypass verification for default seeded accounts since those emails don't exist
+    const seededEmails = ['admin@example.com', 'student1@example.com', 'lib@example.com'];
+    if (!user.isVerified && !seededEmails.includes(user.email)) {
       return res.status(403).json({
         message: 'Please verify your email before logging in. Check your inbox for the verification link.',
         requiresVerification: true,

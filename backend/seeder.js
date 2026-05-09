@@ -13,9 +13,9 @@ const importData = async () => {
     await Book.deleteMany();
 
     const users = [
-      { name: 'Admin User', email: 'admin@example.com', password: 'password123', role: 'Admin' },
-      { name: 'Student One', email: 'student1@example.com', password: 'password123', role: 'Student', branch: 'CSE', year: 2 },
-      { name: 'Librarian', email: 'lib@example.com', password: 'password123', role: 'Librarian' }
+      { name: 'Admin User', email: 'admin@example.com', password: 'password123', role: 'Admin', isVerified: true },
+      { name: 'Student One', email: 'student1@example.com', password: 'password123', role: 'Student', branch: 'CSE', year: 2, isVerified: true },
+      { name: 'Librarian', email: 'lib@example.com', password: 'password123', role: 'Librarian', isVerified: true }
     ];
 
     const createdUsers = [];
