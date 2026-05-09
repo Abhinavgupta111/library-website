@@ -263,24 +263,25 @@ function createTransporter() {
   }
 
   return nodemailer.createTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,          // use STARTTLS (not SSL)
+    port: 465,
+    secure: true,          // use SSL
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,  // 16-char Gmail App Password (requires 2FA on the account)
     },
     tls: {
-      rejectUnauthorized: true,
+      rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
-    greetingTimeout:   8000,
-    socketTimeout:     10000,
+    connectionTimeout: 20000,
+    greetingTimeout:   15000,
+    socketTimeout:     20000,
   });
 }
 
 // Wrapper: reject if sendMail takes longer than `ms` milliseconds
-function sendMailWithTimeout(transporter, options, ms = 12000) {
+function sendMailWithTimeout(transporter, options, ms = 20000) {
   return Promise.race([
     transporter.sendMail(options),
     new Promise((_, reject) =>

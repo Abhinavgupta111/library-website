@@ -18,7 +18,7 @@ const ForgotPassword = () => {
             const { data } = await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`,
                 { email },
-                { timeout: 15000 }   // fail after 15 s instead of hanging forever
+                { timeout: 25000 }   // fail after 25 s instead of hanging forever
             );
             setMsg({ type: 'success', text: data.message });
             setEmail('');

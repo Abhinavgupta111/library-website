@@ -32,7 +32,7 @@ const Signup = () => {
 
         setLoading(true);
         try {
-            const config = { headers: { 'Content-Type': 'application/json' } };
+            const config = { headers: { 'Content-Type': 'application/json' }, timeout: 25000 };
             await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`,
                 { name, email, password, branch, year: Number(year) },
