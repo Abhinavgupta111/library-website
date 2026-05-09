@@ -3,27 +3,19 @@ import User from '../models/User.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Sync Clerk user with MongoDB after login / signup
-//          Also accepts optional profile fields (branch, year, roll_number)
+//          Uses ClerkExpressWithAuth() on the route — req.auth is already set
 // @route   POST /api/auth/sync
-// @access  Public (but validates Clerk Bearer token internally)
+// @access  Clerk-verified
 // ─────────────────────────────────────────────────────────────────────────────
 export const syncUser = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-    if (!token) return res.status(401).json({ message: 'No token provided.' });
-
-    // Verify the Clerk session token
-    let payload;
-    try {
-      payload = await clerkClient.verifyToken(token);
-    } catch {
-      return res.status(401).json({ message: 'Invalid or expired session token.' });
+    // Clerk v4 middleware populates req.auth
+    const clerkId = req.auth?.userId;
+    if (!clerkId) {
+      return res.status(401).json({ message: 'Not authorized — no Clerk session.' });
     }
 
-    const clerkId = payload.sub;
-
-    // Fetch user details from Clerk
+    // Fetch user details from Clerk API
     const clerkUser = await clerkClient.users.getUser(clerkId);
     const email = clerkUser.emailAddresses?.[0]?.emailAddress || '';
     const name  = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User';
@@ -35,20 +27,18 @@ export const syncUser = async (req, res) => {
     let user = await User.findOne({ clerkId });
 
     if (!user) {
-      // First time — create a new record
       user = await User.create({
         clerkId,
         name,
         email,
         role: 'Student',
-        branch:      branch  || undefined,
-        year:        year    ? Number(year) : undefined,
+        branch:      branch      || undefined,
+        year:        year        ? Number(year) : undefined,
         roll_number: roll_number || undefined,
         profileComplete: !!(roll_number),
         lastLogin: new Date(),
       });
     } else {
-      // Existing user — update name/email from Clerk & merge any new profile fields
       user.name      = name;
       user.email     = email;
       user.lastLogin = new Date();
@@ -56,7 +46,7 @@ export const syncUser = async (req, res) => {
       if (branch)      user.branch      = branch;
       if (year)        user.year        = Number(year);
       if (roll_number) {
-        user.roll_number    = roll_number;
+        user.roll_number     = roll_number;
         user.profileComplete = true;
       }
 
@@ -83,7 +73,7 @@ export const syncUser = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Get current user's profile
 // @route   GET /api/auth/profile
-// @access  Private
+// @access  Private (protect middleware sets req.user)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUserProfile = async (req, res) => {
   try {
@@ -109,7 +99,7 @@ export const updateUserProfile = async (req, res) => {
     if (req.body.branch)      user.branch      = req.body.branch;
     if (req.body.year)        user.year        = Number(req.body.year);
     if (req.body.roll_number) {
-      user.roll_number    = req.body.roll_number;
+      user.roll_number     = req.body.roll_number;
       user.profileComplete = true;
     }
 

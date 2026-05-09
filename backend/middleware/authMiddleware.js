@@ -1,35 +1,32 @@
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
 import User from '../models/User.js';
 
 /**
- * protect — Verifies the Clerk Bearer token and attaches req.user (MongoDB User).
+ * protect — Clerks ClerkExpressRequireAuth() verifies the Bearer token,
+ * then we find the corresponding MongoDB user and attach it to req.user.
  */
-export const protect = async (req, res, next) => {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+export const protect = [
+  ClerkExpressRequireAuth(),           // ← Clerk v4 standard middleware
+  async (req, res, next) => {
+    try {
+      const clerkId = req.auth?.userId;
+      if (!clerkId) {
+        return res.status(401).json({ message: 'Not authorized, no user ID in token' });
+      }
 
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
-  }
+      const user = await User.findOne({ clerkId });
+      if (!user) {
+        return res.status(401).json({ message: 'User not found. Please complete sign-up.' });
+      }
 
-  try {
-    // Verify with Clerk — throws if invalid/expired
-    const payload = await clerkClient.verifyToken(token);
-    const clerkId = payload.sub;
-
-    // Find corresponding MongoDB user
-    const user = await User.findOne({ clerkId });
-    if (!user) {
-      return res.status(401).json({ message: 'User not found. Please complete sign-up.' });
+      req.user = user;
+      next();
+    } catch (err) {
+      console.error('[Auth Middleware] Error:', err.message);
+      return res.status(401).json({ message: 'Not authorized' });
     }
-
-    req.user = user;
-    next();
-  } catch (err) {
-    console.error('[Auth] Token verification failed:', err.message);
-    return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
   }
-};
+];
 
 export const admin = (req, res, next) => {
   if (req.user && req.user.role === 'Admin') {
